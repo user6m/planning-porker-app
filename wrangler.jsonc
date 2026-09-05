@@ -1,0 +1,31 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "planning-porker-app",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-09-05",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"assets": {
+		"directory": "./public"
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "POKER_ROOM",
+				"class_name": "PokerRoom"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["PokerRoom"]
+		}
+	],
+	"vars": {
+		// Overridden with a real secret in production via `wrangler secret put SESSION_SECRET`.
+		"SESSION_SECRET": "dev-only-secret-change-me"
+	}
+}

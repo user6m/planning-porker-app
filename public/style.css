@@ -1,0 +1,204 @@
+:root {
+	color-scheme: light dark;
+	--bg: #f7f7fb;
+	--fg: #1c1c28;
+	--muted: #6b6b7b;
+	--accent: #5b5bd6;
+	--accent-fg: #ffffff;
+	--card-bg: #ffffff;
+	--border: #e2e2ec;
+	--danger: #c53030;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+	background: var(--bg);
+	color: var(--fg);
+}
+
+.page {
+	max-width: 960px;
+	margin: 0 auto;
+	padding: 2rem 1.25rem 4rem;
+}
+
+h1 {
+	margin: 0 0 0.25rem;
+}
+
+.lead {
+	color: var(--muted);
+	margin-top: 0;
+}
+
+.error {
+	color: var(--danger);
+	font-weight: 600;
+}
+
+.card {
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+form {
+	display: flex;
+	flex-direction: column;
+	gap: 0.9rem;
+}
+
+label {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	font-size: 0.9rem;
+	color: var(--muted);
+}
+
+input[type="text"] {
+	font-size: 1rem;
+	padding: 0.6rem 0.7rem;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	background: var(--bg);
+	color: var(--fg);
+}
+
+button {
+	cursor: pointer;
+	font-size: 0.95rem;
+	font-weight: 600;
+	padding: 0.65rem 1.1rem;
+	border-radius: 8px;
+	border: none;
+	background: var(--accent);
+	color: var(--accent-fg);
+}
+
+button:hover {
+	filter: brightness(1.05);
+}
+
+button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+button.secondary {
+	background: transparent;
+	color: var(--fg);
+	border: 1px solid var(--border);
+}
+
+.room-header {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+.room-code code {
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 0.1rem 0.4rem;
+}
+
+.me {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+	min-width: 220px;
+}
+
+.spectator-toggle {
+	flex-direction: row;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.participants {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+	gap: 0.75rem;
+	margin-bottom: 2rem;
+}
+
+.participant {
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 0.75rem;
+	text-align: center;
+}
+
+.participant .name {
+	font-weight: 600;
+	font-size: 0.9rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.participant .vote-slot {
+	margin-top: 0.5rem;
+	height: 2.2rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.2rem;
+	font-weight: 700;
+	border-radius: 6px;
+	background: var(--bg);
+}
+
+.participant.voted .vote-slot {
+	background: #dff5e1;
+}
+
+.participant.spectator {
+	opacity: 0.6;
+}
+
+.cards {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem;
+	margin-bottom: 1.25rem;
+}
+
+.card-btn {
+	background: var(--card-bg);
+	border: 2px solid var(--border);
+	color: var(--fg);
+	border-radius: 10px;
+	width: 3.2rem;
+	height: 4.4rem;
+	font-size: 1.1rem;
+	font-weight: 700;
+}
+
+.card-btn.selected {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+.actions {
+	display: flex;
+	gap: 0.75rem;
+}
+
+.status {
+	color: var(--muted);
+	font-size: 0.85rem;
+}
