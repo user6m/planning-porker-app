@@ -134,6 +134,7 @@ jobs:
       # package.jsonのversionが既に算出結果と一致している場合 (最初のリリースなど)
       # はコミットする差分が無いため、コミットはスキップしタグ付けだけ行う。
       - name: Commit and tag release
+        id: tag
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -146,7 +147,19 @@ jobs:
             git push origin HEAD:main
           fi
 
-          if ! git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
             git tag "v${VERSION}"
             git push origin "v${VERSION}"
+            echo "created=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # 新しくタグを作成できたときだけGitHub Releaseを作成する
+      # (再実行などでタグが既に存在する場合は重複作成しない)。
+      - name: Create GitHub Release
+        if: steps.tag.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
