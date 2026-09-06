@@ -83,6 +83,43 @@ pnpm exec wrangler secret put SESSION_SECRET
 `wrangler.jsonc` には `SESSION_SECRET` を `vars` として書かないでください。書いてしまうと、
 デプロイのたびにその平文の値でシークレットが上書きされてしまいます。
 
+## CI/CD
+
+GitHub Actions（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）で以下を自動化しています。
+
+- **CI**（`main`へのpush / 全PR）: `pnpm typecheck` / `pnpm lint` / `pnpm test` を実行
+- **CD**（`main`へのpush、CI成功後）: `wrangler deploy --minify` で本番デプロイ
+
+デプロイジョブを動かすには、リポジトリに以下のSecretsを設定してください（Settings → Environments →
+`production`、またはSettings → Secrets and variables → Actions）。
+
+| Secret | 説明 |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Workersへのデプロイ権限を持つ[Cloudflare APIトークン](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/) |
+| `CLOUDFLARE_ACCOUNT_ID` | デプロイ先のCloudflareアカウントID |
+
+`SESSION_SECRET` はこれらのSecretsとは別物です。CIの型生成・テストではダミー値（`.dev.vars`と同じ
+`dev-only-secret-change-me`）をワークフロー内で使い捨て生成しており、本番のシークレットには影響しません。
+本番用の`SESSION_SECRET`は上記の通り`wrangler secret put`で設定したままにしてください。
+
+### デプロイに承認を必須にする（本リポジトリはpublicなので推奨）
+
+デプロイジョブは `environment: production` を指定済みです。GitHubのEnvironment保護ルールで
+承認者を必須にすると、`main`へのpush自体は自動で走りますが、実際の`wrangler deploy`実行は
+指定した承認者の承認が下りるまで一時停止します。
+
+1. リポジトリの **Settings → Environments → New environment** で `production` という名前の環境を作成（既にあれば選択）
+2. **Deployment protection rules** の **Required reviewers** を有効化し、自分（または承認してほしいメンバー）を追加
+3. 保存後は、`main`へのpush → CI成功 → デプロイジョブが `Waiting` 状態になり、Actionsタブから承認するまでデプロイされない
+
+### その他、publicリポジトリとして確認しておきたい設定
+
+これらもGitHubの管理画面での設定が必要です（APIからは変更できません）。
+
+- **Settings → Branches**: `main` にブランチ保護ルールを設定し、PR経由でのマージ・CIのパス必須化・force push禁止を有効化
+- **Settings → Code security**: Secret scanning / Push protection、Dependabot alerts・Dependabot security updates を有効化（publicリポジトリではデフォルトで一部有効ですが、Push protectionは確認推奨）
+- **Settings → Actions → General**: 「Fork pull request workflows」まわりの権限が必要以上に広くなっていないか確認（デフォルトのままで問題ありません）
+
 ## プロジェクト構成
 
 ```
