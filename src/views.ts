@@ -1,5 +1,6 @@
 import { html } from "hono/html";
 import type { HtmlEscapedString } from "hono/utils/html";
+import pkg from "../package.json";
 import type { UserSession } from "./session";
 
 function layout(
@@ -16,6 +17,7 @@ function layout(
 	</head>
 	<body>
 		${body}
+		<footer class="app-footer">v${pkg.version}</footer>
 	</body>
 </html>`;
 }
