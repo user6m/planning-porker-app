@@ -83,6 +83,25 @@ pnpm exec wrangler secret put SESSION_SECRET
 `wrangler.jsonc` には `SESSION_SECRET` を `vars` として書かないでください。書いてしまうと、
 デプロイのたびにその平文の値でシークレットが上書きされてしまいます。
 
+## CI/CD
+
+GitHub Actions（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）で以下を自動化しています。
+
+- **CI**（`main`へのpush / 全PR）: `pnpm typecheck` / `pnpm lint` / `pnpm test` を実行
+- **CD**（`main`へのpush、CI成功後）: `wrangler deploy --minify` で本番デプロイ
+
+デプロイジョブを動かすには、リポジトリに以下のSecretsを設定してください（Settings → Environments →
+`production`、またはSettings → Secrets and variables → Actions）。
+
+| Secret | 説明 |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Workersへのデプロイ権限を持つ[Cloudflare APIトークン](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/) |
+| `CLOUDFLARE_ACCOUNT_ID` | デプロイ先のCloudflareアカウントID |
+
+`SESSION_SECRET` はこれらのSecretsとは別物です。CIの型生成・テストではダミー値（`.dev.vars`と同じ
+`dev-only-secret-change-me`）をワークフロー内で使い捨て生成しており、本番のシークレットには影響しません。
+本番用の`SESSION_SECRET`は上記の通り`wrangler secret put`で設定したままにしてください。
+
 ## プロジェクト構成
 
 ```
