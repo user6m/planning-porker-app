@@ -131,14 +131,22 @@ jobs:
 
       # [skip ci] を付けることでこのpush自体はCIを再実行しない
       # (GitHub Actionsの標準機能)。
+      # package.jsonのversionが既に算出結果と一致している場合 (最初のリリースなど)
+      # はコミットする差分が無いため、コミットはスキップしタグ付けだけ行う。
       - name: Commit and tag release
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          git commit -m "chore: release v${VERSION} [skip ci]"
-          git tag "v${VERSION}"
-          git push origin HEAD:main
-          git push origin "v${VERSION}"
+
+          if ! git diff --quiet -- package.json; then
+            git add package.json
+            git commit -m "chore: release v${VERSION} [skip ci]"
+            git push origin HEAD:main
+          fi
+
+          if ! git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            git tag "v${VERSION}"
+            git push origin "v${VERSION}"
+          fi
