@@ -50,6 +50,23 @@ SESSION_SECRET=dev-only-secret-change-me
 - `SESSION_SECRET` は `wrangler.jsonc` の `vars` に**絶対に書かない**こと。書くとデプロイのたびに平文の値でシークレットが上書きされる。
 - 本番用のシークレットは `pnpm exec wrangler secret put SESSION_SECRET` で設定する。
 
+## バージョニング（CalVer）
+
+`package.json` の `version` はセマンティックバージョニングではなく **CalVer (`YYYY.MM.MICRO`)** を採用している（例: `2026.9.0`）。
+
+- `YYYY.MM`: リリースした年月（UTC）
+- `MICRO`: 同じ年月内で何回目のリリースか（0始まり）。月が変わったら0にリセットされる
+
+CI (`.github/workflows/ci.yml`) の `deploy` ジョブが、mainへのpushで本番デプロイに成功した直後に自動で
+
+1. `scripts/bump-calver.mjs`（`pnpm version:bump`）で既存の `v<year>.<month>.*` タグから次のバージョンを算出し `package.json` に書き込む
+2. `chore: release vX.Y.Z [skip ci]` としてmainにコミット・push
+3. `vX.Y.Z` のgitタグをpush
+
+まで行う。手動でのバージョン更新は不要。ローカルで次のバージョンを確認したいだけなら `pnpm version:bump` を実行する（`package.json` が書き換わるので確認後は `git checkout -- package.json` で戻すこと）。
+
+なお `deploy` ジョブは、変更ファイルが `**/*.md` / `docs/**` / `.github/ISSUE_TEMPLATE/**` / `.github/dependabot.yml` / `LICENSE` のようなドキュメント類だけの場合はスキップされる（`changes` ジョブが判定）。本番に影響するコード・設定の変更（`src/`, `public/`, `wrangler.jsonc`, `package.json` など）が含まれるpushでのみ実際にデプロイ・バージョン付与が行われる。
+
 ## アーキテクチャ・主要ファイル
 
 ```

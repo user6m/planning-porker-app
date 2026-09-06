@@ -54,18 +54,51 @@ jobs:
       - name: Test
         run: pnpm test
 
+  changes:
+    name: Detect production-relevant changes
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      should_deploy: ${{ steps.filter.outputs.docsOnly != 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # push前後のdiffを取るため履歴を全取得する。
+          fetch-depth: 0
+
+      # 変更ファイルがドキュメント類だけ (docsOnly) なら本番に影響しないためデプロイをスキップする。
+      - name: Check changed files
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          predicate-quantifier: every
+          filters: |
+            docsOnly:
+              - '**/*.md'
+              - 'docs/**'
+              - '.github/ISSUE_TEMPLATE/**'
+              - '.github/dependabot.yml'
+              - 'LICENSE'
+
   deploy:
     name: Deploy to Cloudflare Workers
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, changes]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     # production環境にRequired reviewersを設定すると、ここであなたの
     # 承認待ちになりデプロイが自動実行されなくなる
     # (Settings → Environments → production → Required reviewers)。
     environment: production
+    # デプロイ後にCalVerバージョンをpackage.jsonへコミット＆タグpushするため書き込み権限が必要。
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # 既存のバージョンタグ (v<year>.<month>.*) を見るためタグ履歴を全取得する。
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -88,3 +121,24 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --minify
+
+      # デプロイに成功したコミットだけにCalVer (YYYY.MM.MICRO) のバージョンを
+      # 付与する。同じ年月に複数回デプロイした場合はMICROを+1し、
+      # 月が変わったら0に戻る (scripts/bump-calver.mjs)。
+      - name: Bump CalVer version
+        id: version
+        run: echo "version=$(pnpm --silent version:bump)" >> "$GITHUB_OUTPUT"
+
+      # [skip ci] を付けることでこのpush自体はCIを再実行しない
+      # (GitHub Actionsの標準機能)。
+      - name: Commit and tag release
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: release v${VERSION} [skip ci]"
+          git tag "v${VERSION}"
+          git push origin HEAD:main
+          git push origin "v${VERSION}"
