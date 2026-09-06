@@ -76,7 +76,7 @@ src/
   session.ts                  # 署名付きCookieによるユーザーセッション（DBなし）
   bindings.ts                 # Cloudflare Bindingsの型定義
   types.ts                    # 部屋の状態・WebSocketメッセージの型
-  views.ts                    # サーバーサイドで返すHTML
+  views.tsx                   # サーバーサイドで返すHTML（hono/jsxによるJSX/TSX）
   durable-objects/
     poker-room.ts             # 部屋(プランニングセッション)を表すDurable Object
 public/
