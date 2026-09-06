@@ -41,6 +41,13 @@ pnpm dev
 
 `http://localhost:8787` で起動します（[wrangler dev](https://developers.cloudflare.com/workers/wrangler/commands/#dev) を使用）。
 
+ローカル開発用の `SESSION_SECRET` は、git管理対象外の `.dev.vars` ファイルに以下のように設定します
+（`wrangler dev` がここから自動で読み込みます）。
+
+```
+SESSION_SECRET=dev-only-secret-change-me
+```
+
 ### 型チェック / Lint
 
 ```bash
@@ -64,12 +71,14 @@ pnpm test
 pnpm deploy
 ```
 
-初回デプロイ前に、Cookie署名用のシークレットを本番用の値で設定してください（`wrangler.jsonc` の
-`vars.SESSION_SECRET` は開発用のダミー値です）。
+初回デプロイ前に、Cookie署名用のシークレットを本番用の値で設定してください。
 
 ```bash
 pnpm exec wrangler secret put SESSION_SECRET
 ```
+
+`wrangler.jsonc` には `SESSION_SECRET` を `vars` として書かないでください。書いてしまうと、
+デプロイのたびにその平文の値でシークレットが上書きされてしまいます。
 
 ## プロジェクト構成
 

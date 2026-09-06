@@ -23,9 +23,10 @@
 			"tag": "v1",
 			"new_sqlite_classes": ["PokerRoom"]
 		}
-	],
-	"vars": {
-		// Overridden with a real secret in production via `wrangler secret put SESSION_SECRET`.
-		"SESSION_SECRET": "dev-only-secret-change-me"
-	}
+	]
+	// SESSION_SECRET is NOT declared here. In production it's set with
+	// `wrangler secret put SESSION_SECRET` (see README). Locally, put it in
+	// a git-ignored `.dev.vars` file instead — a `vars` entry here would be
+	// committed in plaintext and would silently overwrite the real secret
+	// on every `wrangler deploy`.
 }
