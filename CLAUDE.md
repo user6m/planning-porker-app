@@ -60,8 +60,9 @@ SESSION_SECRET=dev-only-secret-change-me
 CI (`.github/workflows/ci.yml`) の `deploy` ジョブが、mainへのpushで本番デプロイに成功した直後に自動で
 
 1. `scripts/bump-calver.mjs`（`pnpm version:bump`）で既存の `v<year>.<month>.*` タグから次のバージョンを算出し `package.json` に書き込む
-2. `chore: release vX.Y.Z [skip ci]` としてmainにコミット・push
-3. `vX.Y.Z` のgitタグをpush
+2. `package.json` に差分があれば `chore: release vX.Y.Z [skip ci]` としてmainにコミット・push（前回リリースと同じバージョンの場合はコミットをスキップ）
+3. `vX.Y.Z` のgitタグを作成・push（既にタグが存在する場合は作成しない）
+4. タグを新規作成できた場合のみ、`gh release create --generate-notes` でそのタグのGitHub Releaseを作成
 
 まで行う。手動でのバージョン更新は不要。ローカルで次のバージョンを確認したいだけなら `pnpm version:bump` を実行する（`package.json` が書き換わるので確認後は `git checkout -- package.json` で戻すこと）。
 

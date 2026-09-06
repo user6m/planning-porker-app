@@ -131,14 +131,39 @@ jobs:
 
       # [skip ci] を付けることでこのpush自体はCIを再実行しない
       # (GitHub Actionsの標準機能)。
+      # そのバージョンをリリース済みかどうかは "vX.Y.Z タグが存在するか" だけで判定する
+      # (package.jsonのdiffの有無で判定すると、再シリアライズ時のフォーマット差異などで
+      # バージョンが変わっていなくても差分が出てしまう可能性があり脆いため)。
+      # 未リリースの場合だけ、package.jsonに差分があればコミットしてタグを打つ
+      # (最初のリリースなどversionが既に一致していて差分が無いケースはタグ付けだけ行う)。
       - name: Commit and tag release
+        id: tag
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          git commit -m "chore: release v${VERSION} [skip ci]"
+
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! git diff --quiet -- package.json; then
+            git add package.json
+            git commit -m "chore: release v${VERSION} [skip ci]"
+            git push origin HEAD:main
+          fi
+
           git tag "v${VERSION}"
-          git push origin HEAD:main
           git push origin "v${VERSION}"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      # 新しくタグを作成できたときだけGitHub Releaseを作成する
+      # (再実行などでタグが既に存在する場合は重複作成しない)。
+      - name: Create GitHub Release
+        if: steps.tag.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
