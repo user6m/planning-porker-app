@@ -8,6 +8,39 @@
 	--card-bg: #ffffff;
 	--border: #e2e2ec;
 	--danger: #c53030;
+	--success-bg: #dff5e1;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		color-scheme: dark;
+		--bg: #14141c;
+		--fg: #eeeef4;
+		--muted: #9a9ab0;
+		--accent: #8484f0;
+		--accent-fg: #14141c;
+		--card-bg: #1e1e2a;
+		--border: #33334a;
+		--danger: #ff8080;
+		--success-bg: #1f3a24;
+	}
+}
+
+:root[data-theme="dark"] {
+	color-scheme: dark;
+	--bg: #14141c;
+	--fg: #eeeef4;
+	--muted: #9a9ab0;
+	--accent: #8484f0;
+	--accent-fg: #14141c;
+	--card-bg: #1e1e2a;
+	--border: #33334a;
+	--danger: #ff8080;
+	--success-bg: #1f3a24;
+}
+
+:root[data-theme="light"] {
+	color-scheme: light;
 }
 
 * {
@@ -163,7 +196,7 @@ button.secondary {
 }
 
 .participant.voted .vote-slot {
-	background: #dff5e1;
+	background: var(--success-bg);
 }
 
 .participant.spectator {
@@ -208,4 +241,19 @@ button.secondary {
 	color: var(--muted);
 	font-size: 0.75rem;
 	padding: 1.5rem 1.25rem;
+}
+
+.theme-toggle {
+	position: fixed;
+	top: 1rem;
+	right: 1rem;
+	width: 2.6rem;
+	height: 2.6rem;
+	padding: 0;
+	font-size: 1.2rem;
+	line-height: 1;
+	border-radius: 50%;
+	background: var(--card-bg);
+	color: var(--fg);
+	border: 1px solid var(--border);
 }
