@@ -1,3 +1,7 @@
+// クライアント(React)とWorker(Hono/Durable Object)の両方から参照する共有の型・定数。
+// このディレクトリのコードはブラウザとWorkersランタイムの両方で動く必要があるため、
+// DOM API や Workers 固有の API に依存しないこと。
+
 /** プランニングポーカーの標準的なカード（フィボナッチ数列 + 特殊カード） */
 export const CARD_DECK = [
 	"0",
@@ -15,6 +19,11 @@ export const CARD_DECK = [
 ] as const;
 
 export type CardValue = (typeof CARD_DECK)[number];
+
+/** 表示名の最大長 */
+export const MAX_NAME_LENGTH = 40;
+/** 部屋の名前の最大長 */
+export const MAX_ROOM_NAME_LENGTH = 100;
 
 export interface Participant {
 	id: string;
@@ -39,6 +48,8 @@ export interface RoomState {
 	}>;
 }
 
+export type RoomParticipant = RoomState["participants"][number];
+
 export type ClientMessage =
 	| { type: "join"; name: string; isSpectator?: boolean }
 	| { type: "vote"; value: CardValue }
@@ -49,3 +60,33 @@ export type ClientMessage =
 export type ServerMessage =
 	| { type: "state"; state: RoomState }
 	| { type: "error"; message: string };
+
+/**
+ * 署名付きCookieに保存されるユーザーセッション。
+ * `GET /api/me` / `PATCH /api/me` のレスポンスでもある。
+ */
+export interface UserSession {
+	userId: string;
+	name: string;
+}
+
+/** `POST /api/rooms` のリクエストボディ */
+export interface CreateRoomRequest {
+	roomName: string;
+	hostName: string;
+}
+
+/** `POST /api/rooms` のレスポンス */
+export interface CreateRoomResponse {
+	roomId: string;
+}
+
+/** `PATCH /api/me` のリクエストボディ */
+export interface UpdateSessionRequest {
+	name: string;
+}
+
+/** API がエラー時に返す JSON */
+export interface ApiErrorResponse {
+	error: string;
+}

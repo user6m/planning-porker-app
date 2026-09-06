@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>プランニングポーカー</title>
+		<script>
+			// FOUC(テーマの一瞬のちらつき)防止: React がマウントする前に保存済みテーマを適用する。
+			// ボタンでの切り替えは src/client/hooks/useTheme.ts が担当する。
+			(() => {
+				try {
+					const theme = localStorage.getItem("pp-theme");
+					if (theme === "dark" || theme === "light") {
+						document.documentElement.dataset.theme = theme;
+					}
+				} catch {
+					// localStorage が使えない環境ではOSの設定(prefers-color-scheme)に従う
+				}
+			})();
+		</script>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="module" src="/src/client/main.tsx"></script>
+	</body>
+</html>

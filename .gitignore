@@ -3,5 +3,6 @@ dist
 .wrangler
 .dev.vars
 worker-configuration.d.ts
+*.tsbuildinfo
 *.log
 .DS_Store

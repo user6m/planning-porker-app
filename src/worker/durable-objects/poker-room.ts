@@ -6,7 +6,7 @@ import {
 	type Participant,
 	type RoomState,
 	type ServerMessage,
-} from "../types";
+} from "../../shared/types";
 
 interface StoredRoom {
 	roomName: string;
@@ -14,11 +14,18 @@ interface StoredRoom {
 	participants: Record<string, Participant>;
 }
 
-const EMPTY_ROOM: StoredRoom = {
-	roomName: "",
-	revealed: false,
-	participants: {},
-};
+/**
+ * 新しい部屋の初期状態。
+ * モジュール共通の定数オブジェクトを使い回すと、同じ isolate 上に複数の部屋(DOインスタンス)が
+ * 同居したときに参加者や部屋名が部屋間で共有されてしまうため、必ず新しいオブジェクトを作る。
+ */
+function createEmptyRoom(): StoredRoom {
+	return {
+		roomName: "",
+		revealed: false,
+		participants: {},
+	};
+}
 
 /**
  * 1つのプランニングポーカーの「セッション（部屋）」を表す Durable Object。
@@ -32,7 +39,7 @@ const EMPTY_ROOM: StoredRoom = {
  * 詳しい解説は docs/SESSION.md を参照。
  */
 export class PokerRoom extends DurableObject<Bindings> {
-	private room: StoredRoom = EMPTY_ROOM;
+	private room: StoredRoom = createEmptyRoom();
 	private readonly ready: Promise<void>;
 
 	constructor(ctx: DurableObjectState, env: Bindings) {

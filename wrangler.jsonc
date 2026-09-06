@@ -1,14 +1,23 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "planning-porker-app",
-	"main": "src/index.ts",
+	"main": "src/worker/index.ts",
 	"compatibility_date": "2025-09-05",
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": {
 		"enabled": true
 	},
 	"assets": {
-		"directory": "./public"
+		// 静的アセット(React SPA)の出力先 `dist/client` は @cloudflare/vite-plugin が
+		// ビルド時に生成する dist/planning_porker_app/wrangler.json へ自動で書き込むので、
+		// ここでは `directory` を指定しない。
+		//
+		// - not_found_handling: どのアセットにも一致しないパス(/rooms/XXXX など)は
+		//   index.html を返し、React Router 側でルーティングする (SPAモード)
+		// - run_worker_first: `/api/*` だけは常に Worker (src/worker/index.ts) で処理する。
+		//   それ以外のリクエストは Worker を起動せずにアセットとして配信される
+		"not_found_handling": "single-page-application",
+		"run_worker_first": ["/api/*"]
 	},
 	"durable_objects": {
 		"bindings": [

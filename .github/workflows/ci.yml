@@ -17,23 +17,25 @@ permissions:
 
 jobs:
   test:
-    name: Typecheck / Lint / Test
+    name: Check / Test / Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      # Vite+ (vp) をインストールする。Node.js と、package.json の packageManager に書かれた
+      # pnpm のセットアップ、依存関係のキャッシュ (cache: true) もこのアクションが行う。
+      # インストールする Vite+ のバージョンは package.json / pnpm-lock.yaml の vite-plus から自動検出される。
+      # (v1 のような可変タグは更新が止まっているため、必ず固定バージョンを指定する)
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1.19.0
         with:
           node-version: 22
-          cache: pnpm
+          cache: true
+          run-install: false
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: vp install --frozen-lockfile
 
       # SESSION_SECRET はローカル開発と同じダミー値。
       # `wrangler types` がEnvの型を生成する際と、vitest-pool-workers が
@@ -43,16 +45,23 @@ jobs:
         run: echo "SESSION_SECRET=dev-only-secret-change-me" > .dev.vars
 
       - name: Generate Cloudflare Workers types
-        run: pnpm cf-typegen
+        run: vp run cf-typegen
 
-      - name: Typecheck
-        run: pnpm typecheck
+      # フォーマット (Oxfmt) / Lint (Oxlint) / 型チェック (tsgolint) をまとめて実行する
+      - name: Check (format / lint / typecheck)
+        run: vp check
 
-      - name: Lint
-        run: pnpm lint
+      # tsconfig のプロジェクト参照どおりに TypeScript 本体 (tsc) でも型チェックする
+      - name: Typecheck (tsc -b)
+        run: vp run typecheck
 
+      # Worker/Durable Object (Workersランタイム上) と React コンポーネント (jsdom) のテスト
       - name: Test
-        run: pnpm test
+        run: vp test
+
+      # Worker と静的アセット (React SPA) のビルドが通ることを確認する
+      - name: Build
+        run: vp build
 
   changes:
     name: Detect production-relevant changes
@@ -79,6 +88,7 @@ jobs:
               - 'docs/**'
               - '.github/ISSUE_TEMPLATE/**'
               - '.github/dependabot.yml'
+              - '.vscode/**'
               - 'LICENSE'
 
   deploy:
@@ -100,17 +110,22 @@ jobs:
           # 既存のバージョンタグ (v<year>.<month>.*) を見るためタグ履歴を全取得する。
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1.19.0
         with:
           node-version: 22
-          cache: pnpm
+          cache: true
+          run-install: false
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: vp install --frozen-lockfile
+
+      # Worker (dist/planning_porker_app) と静的アセット (dist/client) をビルドする。
+      # @cloudflare/vite-plugin がデプロイ用の dist/planning_porker_app/wrangler.json と、
+      # wrangler コマンドをそこへ向ける .wrangler/deploy/config.json を生成するので、
+      # 続く `wrangler deploy` はビルド成果物をそのままデプロイする。
+      - name: Build
+        run: vp build
 
       # 本番の SESSION_SECRET は `wrangler secret put` で別途設定済み。
       # wrangler.jsonc の vars には書かない (書くとデプロイのたびに
@@ -120,14 +135,14 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --minify
+          command: deploy
 
       # デプロイに成功したコミットだけにCalVer (YYYY.MM.MICRO) のバージョンを
       # 付与する。同じ年月に複数回デプロイした場合はMICROを+1し、
       # 月が変わったら0に戻る (scripts/bump-calver.mjs)。
       - name: Bump CalVer version
         id: version
-        run: echo "version=$(pnpm --silent version:bump)" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(node scripts/bump-calver.mjs)" >> "$GITHUB_OUTPUT"
 
       # [skip ci] を付けることでこのpush自体はCIを再実行しない
       # (GitHub Actionsの標準機能)。

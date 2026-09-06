@@ -3,8 +3,8 @@
 このアプリには、目的の異なる2種類の「セッション」が登場します。混同しやすいので、
 それぞれ何を解決するための仕組みなのかを分けて説明します。
 
-1. **ユーザーセッション** — このブラウザは誰か？を覚えておく仕組み（`src/session.ts`）
-2. **プランニングセッション（部屋）** — 複数人でリアルタイムに状態を共有する仕組み（`src/durable-objects/poker-room.ts`）
+1. **ユーザーセッション** — このブラウザは誰か？を覚えておく仕組み（`src/worker/session.ts`）
+2. **プランニングセッション（部屋）** — 複数人でリアルタイムに状態を共有する仕組み（`src/worker/durable-objects/poker-room.ts`）
 
 どちらも「状態をどこかに保持して、後続のリクエスト/接続に引き継ぐ」という点は共通していますが、
 保存場所も、想定するアクセスパターンも全く違います。
@@ -21,16 +21,22 @@
 
 ### 採用した方法: HMAC署名付きCookie（ステートレスセッション）
 
-`src/session.ts` では、Hono の [`hono/cookie`](https://hono.dev/docs/helpers/cookie) が提供する
+`src/worker/session.ts` では、Hono の [`hono/cookie`](https://hono.dev/docs/helpers/cookie) が提供する
 `setSignedCookie` / `getSignedCookie` を使っています。
 
 ```ts
-await setSignedCookie(c, "pp_session", JSON.stringify({ userId, name }), secret, {
-	httpOnly: true,
-	secure: true,
-	sameSite: "Lax",
-	maxAge: 60 * 60 * 24 * 30,
-});
+await setSignedCookie(
+	c,
+	"pp_session",
+	JSON.stringify({ userId, name }),
+	secret,
+	{
+		httpOnly: true,
+		secure: true,
+		sameSite: "Lax",
+		maxAge: 60 * 60 * 24 * 30,
+	},
+);
 ```
 
 仕組みは次の通りです。
@@ -43,16 +49,16 @@ await setSignedCookie(c, "pp_session", JSON.stringify({ userId, name }), secret,
 
 このやり方の利点は、**サーバー側に何も保存しなくてよい**ことです。Cookie自体が「正当性を自己証明する」
 トークンになっているため、Durable Objectのようなステートフルな仕組みや、DBのセッションテーブルが不要になります。
-これは俗に *ステートレスセッション* と呼ばれる方式で、JWTを使った認証と考え方は同じです。
+これは俗に _ステートレスセッション_ と呼ばれる方式で、JWTを使った認証と考え方は同じです。
 
 各Cookie属性の役割:
 
-| 属性 | 役割 |
-| --- | --- |
-| `httpOnly` | JavaScript(`document.cookie`)からの読み取りを禁止し、XSSでの盗み取りを防ぐ |
-| `secure` | HTTPS接続でのみ送信させる |
+| 属性              | 役割                                                                         |
+| ----------------- | ---------------------------------------------------------------------------- |
+| `httpOnly`        | JavaScript(`document.cookie`)からの読み取りを禁止し、XSSでの盗み取りを防ぐ   |
+| `secure`          | HTTPS接続でのみ送信させる                                                    |
 | `sameSite: "Lax"` | 他サイトからのクロスサイトリクエストで送信されないようにし、CSRFの一部を防ぐ |
-| `maxAge` | 有効期限。切れると次回アクセス時に新しいセッションが発行される |
+| `maxAge`          | 有効期限。切れると次回アクセス時に新しいセッションが発行される               |
 
 ### 試してみよう
 
@@ -139,10 +145,10 @@ async webSocketClose(ws: WebSocket) { /* 切断時に呼ばれる */ }
 
 ## まとめ: 2つの「セッション」の対比
 
-| | ユーザーセッション | プランニングセッション（部屋） |
-| --- | --- | --- |
-| 何を覚える? | このブラウザが誰か | 部屋に今誰がいて、何に投票したか |
-| 保存場所 | クライアントのCookie（署名付き） | Durable Objectの `ctx.storage` |
-| アクセスパターン | リクエスト単位（HTTP） | 複数クライアントからの継続接続（WebSocket） |
-| スケールの考え方 | ステートレス。どのWorkerが処理してもよい | 部屋ごとに1つのインスタンスへ集約 |
-| 主な脅威への対策 | HMAC署名で改ざん検知 | 1インスタンス制約で競合状態を防止 |
+|                  | ユーザーセッション                       | プランニングセッション（部屋）              |
+| ---------------- | ---------------------------------------- | ------------------------------------------- |
+| 何を覚える?      | このブラウザが誰か                       | 部屋に今誰がいて、何に投票したか            |
+| 保存場所         | クライアントのCookie（署名付き）         | Durable Objectの `ctx.storage`              |
+| アクセスパターン | リクエスト単位（HTTP）                   | 複数クライアントからの継続接続（WebSocket） |
+| スケールの考え方 | ステートレス。どのWorkerが処理してもよい | 部屋ごとに1つのインスタンスへ集約           |
+| 主な脅威への対策 | HMAC署名で改ざん検知                     | 1インスタンス制約で競合状態を防止           |

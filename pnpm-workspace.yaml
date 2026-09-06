@@ -1,0 +1,19 @@
+# Vite+ が同梱する Vite/Vitest と、プラグイン (@vitejs/plugin-react, @cloudflare/vite-plugin,
+# @cloudflare/vitest-pool-workers) が import する "vite" / "vitest" を同一のコピーに揃えるための override。
+# https://viteplus.dev/guide/migrate#manual-installation--migration
+#
+# - vite:   devDependencies の "vite" はこの alias によって @voidzero-dev/vite-plus-core (Vite+ 版の Vite) に置き換わる
+# - vitest: Vite+ が同梱する Vitest のバージョンに固定する (`pnpm exec vp toolchain vitest` で確認できる)
+overrides:
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.0
+  vitest: 4.1.11
+
+# 上記の alias により、各プラグインの peerDependency "vite@^8" は 0.3.0 (vite-plus-core) として解決される。
+# 意図した状態なので "unmet peer" 警告を抑止する。
+peerDependencyRules:
+  allowedVersions:
+    vite: "*"
+
+onlyBuiltDependencies:
+  - esbuild
+  - workerd

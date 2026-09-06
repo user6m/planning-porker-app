@@ -1,0 +1,17 @@
+{
+	// 全プロジェクト共通の compilerOptions。lib / types / include は各 tsconfig.*.json で指定する
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"moduleDetection": "force",
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"allowJs": false
+	}
+}

@@ -1,17 +1,12 @@
 {
-	"compilerOptions": {
-		"target": "ES2022",
-		"lib": ["ES2022"],
-		"module": "ES2022",
-		"moduleResolution": "Bundler",
-		"types": ["vitest/globals", "@cloudflare/vitest-pool-workers"],
-		"strict": true,
-		"noUncheckedIndexedAccess": true,
-		"skipLibCheck": true,
-		"resolveJsonModule": true,
-		"isolatedModules": true,
-		"noEmit": true,
-		"allowJs": false
-	},
-	"include": ["src", "test", "worker-configuration.d.ts"]
+	// プロジェクト参照のルート。実際の設定は用途ごとの tsconfig.*.json にある。
+	// - tsconfig.app.json:    src/client (ブラウザ / React) + src/shared
+	// - tsconfig.worker.json: src/worker (Cloudflare Workers) + src/shared + test
+	// - tsconfig.node.json:   vite.config.ts (Node.js)
+	"files": [],
+	"references": [
+		{ "path": "./tsconfig.app.json" },
+		{ "path": "./tsconfig.worker.json" },
+		{ "path": "./tsconfig.node.json" }
+	]
 }

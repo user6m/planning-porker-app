@@ -1,6 +1,9 @@
 import type { Context } from "hono";
 import { getSignedCookie, setSignedCookie } from "hono/cookie";
+import type { UserSession } from "../shared/types";
 import type { Bindings } from "./bindings";
+
+export type { UserSession };
 
 /**
  * 「ユーザーセッション」= このブラウザが誰なのかを覚えておく仕組み。
@@ -10,11 +13,6 @@ import type { Bindings } from "./bindings";
  */
 const COOKIE_NAME = "pp_session";
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30日
-
-export interface UserSession {
-	userId: string;
-	name: string;
-}
 
 function generateGuestName(): string {
 	const n = Math.floor(Math.random() * 9000) + 1000;

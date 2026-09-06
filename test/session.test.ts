@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { describe, expect, it } from "vitest";
-import type { Bindings } from "../src/bindings";
-import { getOrCreateSession, persistSession } from "../src/session";
+import { describe, expect, it } from "vite-plus/test";
+import type { Bindings } from "../src/worker/bindings";
+import { getOrCreateSession, persistSession } from "../src/worker/session";
 
 function makeApp() {
 	const app = new Hono<{ Bindings: Bindings }>();

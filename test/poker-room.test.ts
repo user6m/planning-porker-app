@@ -1,6 +1,6 @@
 import { env, runInDurableObject } from "cloudflare:test";
-import { describe, expect, it } from "vitest";
-import type { PokerRoom } from "../src/durable-objects/poker-room";
+import { describe, expect, it } from "vite-plus/test";
+import type { PokerRoom } from "../src/worker/durable-objects/poker-room";
 
 function getStub(name: string) {
 	const id = env.POKER_ROOM.idFromName(name);

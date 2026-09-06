@@ -5,36 +5,44 @@
 	"description": "複数人でリアルタイムに見積もりを行えるプランニングポーカーアプリ",
 	"type": "module",
 	"scripts": {
-		"dev": "wrangler dev",
-		"deploy": "wrangler deploy --minify",
-		"build": "tsc --noEmit",
-		"typecheck": "tsc --noEmit",
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"lint": "biome check",
-		"fix": "biome check --write",
+		"dev": "vp dev",
+		"build": "vp build",
+		"preview": "vp preview",
+		"deploy": "vp build && wrangler deploy",
+		"check": "vp check",
+		"fix": "vp check --fix",
+		"lint": "vp lint",
+		"fmt": "vp fmt",
+		"typecheck": "tsc -b",
+		"test": "vp test",
+		"test:watch": "vp test watch",
 		"cf-typegen": "wrangler types",
 		"version:bump": "node scripts/bump-calver.mjs"
 	},
 	"dependencies": {
-		"hono": "^4.13.7"
+		"hono": "^4.13.7",
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8",
+		"react-router": "^8.3.1"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.11",
+		"@cloudflare/vite-plugin": "^1.54.4",
 		"@cloudflare/vitest-pool-workers": "^0.22.0",
+		"@testing-library/dom": "^10.4.1",
+		"@testing-library/react": "^16.3.3",
+		"@testing-library/user-event": "^14.6.7",
 		"@types/node": "^26.4.1",
+		"@types/react": "^19.2.18",
+		"@types/react-dom": "^19.2.7",
+		"@vitejs/plugin-react": "^6.1.1",
+		"jsdom": "^30.0.1",
 		"typescript": "^7.0.2",
-		"vitest": "^4.1.0",
+		"vite": "^8.2.2",
+		"vite-plus": "^0.3.0",
 		"wrangler": "^4.129.0"
 	},
 	"engines": {
-		"node": ">=20"
+		"node": ">=22.18.0"
 	},
-	"packageManager": "pnpm@10.29.3",
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"esbuild",
-			"workerd"
-		]
-	}
+	"packageManager": "pnpm@10.29.3"
 }
