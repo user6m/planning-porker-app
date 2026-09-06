@@ -14,10 +14,20 @@ function layout(
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>${title}</title>
 		<link rel="stylesheet" href="/style.css" />
+		<script>
+			(() => {
+				const theme = localStorage.getItem("pp-theme");
+				if (theme === "dark" || theme === "light") {
+					document.documentElement.dataset.theme = theme;
+				}
+			})();
+		</script>
 	</head>
 	<body>
+		<button id="theme-toggle" class="theme-toggle" type="button" aria-label="表示テーマを切り替え"></button>
 		${body}
 		<footer class="app-footer">v${pkg.version}</footer>
+		<script src="/theme.js"></script>
 	</body>
 </html>`;
 }
