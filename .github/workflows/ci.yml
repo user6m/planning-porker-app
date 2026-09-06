@@ -9,6 +9,12 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# publicリポジトリのため最小権限をデフォルトにする。
+# フォークからのPRではGitHubが自動的にGITHUB_TOKENを読み取り専用にするが、
+# 同一リポジトリ上のpush/PRでも書き込み権限を渡さないよう明示しておく。
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Typecheck / Lint / Test
@@ -53,9 +59,10 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # production環境にRequired reviewersを設定すると、ここであなたの
+    # 承認待ちになりデプロイが自動実行されなくなる
+    # (Settings → Environments → production → Required reviewers)。
     environment: production
-    permissions:
-      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v5
