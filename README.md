@@ -7,6 +7,7 @@
 - 🔤 言語: TypeScript
 - 🧩 フレームワーク: [Hono](https://hono.dev/)
 - 🗄️ データストア: [Durable Objects](https://developers.cloudflare.com/durable-objects/)（部屋の状態）+ 署名付きCookie（ユーザー識別）
+- 🔗 公開URL: https://planning-porker-app.te0.workers.dev/ （登録不要ですぐ使えます）
 
 ## なぜこの構成か
 
@@ -21,6 +22,8 @@ DBのトランザクションやポーリングなしに、投票の競合を防
 > 🎓 この2つの「セッション」の実装について詳しく学びたい方は [docs/SESSION.md](docs/SESSION.md) を参照してください。
 
 ## 使い方
+
+上記の[公開URL](https://planning-porker-app.te0.workers.dev/)にアクセスするか、後述の手順でローカル/自前環境を用意してください。
 
 1. トップページで部屋の名前と自分の表示名を入力して「部屋を作成」
 2. 発行された部屋コード付きのURLをチームに共有
