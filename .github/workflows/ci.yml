@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, closed]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -18,6 +19,9 @@ permissions:
 jobs:
   test:
     name: Typecheck / Lint / Test
+    # PRのclose(マージ含む)イベントでは実行不要
+    # (マージ前に既にこのジョブがRequired status checkとして通っている)。
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -90,9 +94,10 @@ jobs:
     # 承認待ちになりデプロイが自動実行されなくなる
     # (Settings → Environments → production → Required reviewers)。
     environment: production
-    # デプロイ後にCalVerバージョンをpackage.jsonへコミット＆タグpushするため書き込み権限が必要。
+    # デプロイ後にCalVerバージョンのリリースPRを作成・自動マージし、タグをpushするため書き込み権限が必要。
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -129,14 +134,87 @@ jobs:
         id: version
         run: echo "version=$(pnpm --silent version:bump)" >> "$GITHUB_OUTPUT"
 
-      # [skip ci] を付けることでこのpush自体はCIを再実行しない
-      # (GitHub Actionsの標準機能)。
+      # mainブランチは "PR経由の変更のみ許可" "署名済みコミット必須" という
+      # リポジトリルールで保護されているため、package.jsonの更新をmainへ
+      # 直接pushすることはできない。そのため、更新用ブランチ(chore/release-vX.Y.Z)を
+      # 作ってPRを作成し、GitHub Nativeのauto-merge(squash)に任せる。
+      # squashマージでmainに作られるコミットはGitHub自身が作成・署名するため
+      # 署名要件を満たし、Required status check ("Typecheck / Lint / Test") も
+      # このPR上のCIで満たされる。
+      # マージ後のタグ付け・GitHub Release作成は、このPRがマージされた時点で
+      # 起動する release-tag ジョブ (pull_request: closed) が行う。
+      #
       # そのバージョンをリリース済みかどうかは "vX.Y.Z タグが存在するか" だけで判定する
       # (package.jsonのdiffの有無で判定すると、再シリアライズ時のフォーマット差異などで
       # バージョンが変わっていなくても差分が出てしまう可能性があり脆いため)。
-      # 未リリースの場合だけ、package.jsonに差分があればコミットしてタグを打つ
-      # (最初のリリースなどversionが既に一致していて差分が無いケースはタグ付けだけ行う)。
-      - name: Commit and tag release
+      # 未リリースの場合だけ、package.jsonに差分があればリリースPRを作成する
+      # (最初のリリースなどversionが既に一致していて差分が無いケースはタグ付けだけ行う。
+      # タグはmainブランチへの変更を伴わないためリポジトリルールの対象外)。
+      - name: Open release PR (or tag immediately if no version change)
+        id: tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git diff --quiet -- package.json; then
+            git tag "v${VERSION}"
+            git push origin "v${VERSION}"
+            echo "created=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BRANCH="chore/release-v${VERSION}"
+          git checkout -b "$BRANCH"
+          git add package.json
+          git commit -m "chore: release v${VERSION}"
+          git push origin "$BRANCH"
+
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore: release v${VERSION}" \
+            --body "CalVerバージョン v${VERSION} への自動バンプPRです。マージされるとタグ付け・GitHub Releaseの作成が行われます (release-tag job)。"
+
+          gh pr merge "$BRANCH" --auto --squash --subject "chore: release v${VERSION} [skip ci]"
+
+          echo "created=false" >> "$GITHUB_OUTPUT"
+
+      # 新しくタグを作成できたとき(=バージョン変更なしで即タグ付けした場合)だけ
+      # ここでGitHub Releaseを作成する。リリースPR経由の場合は release-tag ジョブが行う。
+      - name: Create GitHub Release
+        if: steps.tag.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
+
+  release-tag:
+    name: Tag and release after version-bump PR merge
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'chore/release-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Determine version from branch name
+        id: version
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          echo "version=${BRANCH#chore/release-v}" >> "$GITHUB_OUTPUT"
+
+      # deployジョブ側で既にタグ付け済み(再実行など)であればスキップする。
+      - name: Tag release
         id: tag
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -149,18 +227,10 @@ jobs:
             exit 0
           fi
 
-          if ! git diff --quiet -- package.json; then
-            git add package.json
-            git commit -m "chore: release v${VERSION} [skip ci]"
-            git push origin HEAD:main
-          fi
-
           git tag "v${VERSION}"
           git push origin "v${VERSION}"
           echo "created=true" >> "$GITHUB_OUTPUT"
 
-      # 新しくタグを作成できたときだけGitHub Releaseを作成する
-      # (再実行などでタグが既に存在する場合は重複作成しない)。
       - name: Create GitHub Release
         if: steps.tag.outputs.created == 'true'
         env:
