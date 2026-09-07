@@ -61,7 +61,6 @@ export const RoomApp: FC<{
 
 	return (
 		<>
-			<RoomQrCode />
 			<RoomHeader
 				roomId={roomId}
 				roomName={roomName}
@@ -112,28 +111,31 @@ const RoomHeader: FC<{
 				部屋コード: <code>{roomId}</code> <CopyLinkButton />
 			</p>
 		</div>
-		<div class="me">
-			<label>
-				表示名
-				<input
-					id="my-name"
-					type="text"
-					value={initialName}
-					maxlength={40}
-					onInput={(e) => onNameInput((e.target as HTMLInputElement).value)}
-				/>
-			</label>
-			<label class="spectator-toggle">
-				<input
-					id="spectator"
-					type="checkbox"
-					checked={isSpectator}
-					onChange={(e) =>
-						onSpectatorChange((e.target as HTMLInputElement).checked)
-					}
-				/>
-				観戦のみ
-			</label>
+		<div class="header-side">
+			<RoomQrCode />
+			<div class="me">
+				<label>
+					表示名
+					<input
+						id="my-name"
+						type="text"
+						value={initialName}
+						maxlength={40}
+						onInput={(e) => onNameInput((e.target as HTMLInputElement).value)}
+					/>
+				</label>
+				<label class="spectator-toggle">
+					<input
+						id="spectator"
+						type="checkbox"
+						checked={isSpectator}
+						onChange={(e) =>
+							onSpectatorChange((e.target as HTMLInputElement).checked)
+						}
+					/>
+					観戦のみ
+				</label>
+			</div>
 		</div>
 	</header>
 );

@@ -147,11 +147,17 @@ button.secondary {
 	padding: 0.1rem 0.4rem;
 }
 
+.header-side {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 1rem;
+}
+
 .qr-widget {
-	position: fixed;
-	top: 4.2rem;
-	right: 1rem;
-	z-index: 10;
+	flex-shrink: 0;
+	/* ページ右上に固定表示される theme-toggle ボタン (top: 1rem, 高さ 2.6rem) と重ならないよう間隔を空ける */
+	margin-top: 2.5rem;
 	background: #ffffff;
 	border: 1px solid var(--border);
 	border-radius: 10px;
@@ -162,8 +168,8 @@ button.secondary {
 
 .qr-widget svg {
 	display: block;
-	width: 110px;
-	height: 110px;
+	width: 84px;
+	height: 84px;
 }
 
 .qr-widget-caption {
@@ -171,19 +177,6 @@ button.secondary {
 	font-size: 0.7rem;
 	/* QRコードを白背景固定にしているため、テーマの --muted は使わず常に読める濃さの灰色を指定 */
 	color: #555;
-}
-
-@media (max-width: 640px) {
-	.qr-widget {
-		top: auto;
-		bottom: 1rem;
-		right: 1rem;
-	}
-
-	.qr-widget svg {
-		width: 84px;
-		height: 84px;
-	}
 }
 
 .me {
@@ -250,12 +243,16 @@ button.secondary {
 }
 
 .card-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	background: var(--card-bg);
 	border: 2px solid var(--border);
 	color: var(--fg);
 	border-radius: 10px;
 	width: 3.2rem;
 	height: 4.4rem;
+	padding: 0;
 	font-size: 1.1rem;
 	font-weight: 700;
 }
