@@ -7,7 +7,15 @@ on:
     types: [opened, synchronize, reopened, closed]
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # pull_request(特にclosed = マージ後)イベントのgithub.refは、PRごとの
+  # マージ用ref (refs/pull/N/merge) ではなくベースブランチ (refs/heads/main) に
+  # 揺れることがあり、その場合mainへのpush(=デプロイ)イベントと同じグループに
+  # なってしまう。cancel-in-progressにより、後から届いた方が先行するpushの
+  # デプロイ実行を巻き込んでキャンセルしてしまう事故が実際に発生した
+  # (PR #12マージ時、closedイベントのrunがデプロイrunをキャンセルしデプロイが
+  # スキップされた)。PR番号があればそれをグループキーに使い、push(main)側の
+  # グループと完全に分離することで、この事故を防ぐ。
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 # publicリポジトリのため最小権限をデフォルトにする。
