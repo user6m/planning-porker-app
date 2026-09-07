@@ -60,11 +60,16 @@ SESSION_SECRET=dev-only-secret-change-me
 CI (`.github/workflows/ci.yml`) の `deploy` ジョブが、mainへのpushで本番デプロイに成功した直後に自動で
 
 1. `scripts/bump-calver.mjs`（`pnpm version:bump`）で既存の `v<year>.<month>.*` タグから次のバージョンを算出し `package.json` に書き込む
-2. `package.json` に差分があれば `chore: release vX.Y.Z [skip ci]` としてmainにコミット・push（前回リリースと同じバージョンの場合はコミットをスキップ）
-3. `vX.Y.Z` のgitタグを作成・push（既にタグが存在する場合は作成しない）
-4. タグを新規作成できた場合のみ、`gh release create --generate-notes` でそのタグのGitHub Releaseを作成
+2. `package.json` に差分がある場合、`chore/release-vX.Y.Z` ブランチを作って `chore: release vX.Y.Z` コミットをpushし、`chore: release vX.Y.Z` PRを作成した上でGitHub Nativeのauto-merge（squash）を予約する（前回リリースと同じバージョンで差分が無い場合はコミット・PR作成をスキップし3.へ）
+3. 差分が無かった場合はその場で `vX.Y.Z` のgitタグを作成・push（既にタグが存在する場合は作成しない）
+4. 2.のPRがマージされたら（Required status check通過後、squashコミットは `[skip ci]` 付きでmainに着地する）、そのマージをトリガーに `release-tag` ジョブが起動し、`vX.Y.Z` のgitタグを作成・push
+5. タグを新規作成できた場合のみ、`gh release create --generate-notes` でそのタグのGitHub Releaseを作成（3.は `deploy` ジョブが、4.は `release-tag` ジョブが行う）
 
-まで行う。手動でのバージョン更新は不要。ローカルで次のバージョンを確認したいだけなら `pnpm version:bump` を実行する（`package.json` が書き換わるので確認後は `git checkout -- package.json` で戻すこと）。
+mainブランチには「PR経由の変更のみ許可」「署名済みコミット必須」というリポジトリルールが設定されているため、CIから直接 `git push origin HEAD:main` することはできない。そのためバージョンバンプはPR＋auto-merge（squash）を経由する（squashマージ時にGitHub自身が作るコミットは自動的に署名済み扱いになる）。
+
+手動でのバージョン更新は不要。ローカルで次のバージョンを確認したいだけなら `pnpm version:bump` を実行する（`package.json` が書き換わるので確認後は `git checkout -- package.json` で戻すこと）。
+
+**前提設定:** リポジトリの Settings → General → Pull Requests で **Allow auto-merge** を有効にしておく必要がある（無効だと `gh pr merge --auto` が失敗する）。
 
 なお `deploy` ジョブは、変更ファイルが `**/*.md` / `docs/**` / `.github/ISSUE_TEMPLATE/**` / `.github/dependabot.yml` / `LICENSE` のようなドキュメント類だけの場合はスキップされる（`changes` ジョブが判定）。本番に影響するコード・設定の変更（`src/`, `public/`, `wrangler.jsonc`, `package.json` など）が含まれるpushでのみ実際にデプロイ・バージョン付与が行われる。
 
