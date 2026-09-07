@@ -2,7 +2,7 @@
 
 複数人でリアルタイムに見積もりポイントを出し合える、シンプルなプランニングポーカー（プランニングポーカー/スクラムポーカー）アプリです。
 
-- 🌐 プラットフォーム: Webブラウザ（PC/スマホ対応、ビルド不要のプレーンJSクライアント）
+- 🌐 プラットフォーム: Webブラウザ（PC/スマホ対応）。画面はサーバー側 `hono/jsx`・ブラウザ側 `hono/jsx/dom` の TSX 関数コンポーネントで、ブラウザ側だけ [Vite](https://vite.dev/) でバンドル
 - ☁️ デプロイ先: [Cloudflare Workers](https://developers.cloudflare.com/workers/)
 - 🔤 言語: TypeScript
 - 🧩 フレームワーク: [Hono](https://hono.dev/)
@@ -42,7 +42,14 @@ pnpm install
 pnpm dev
 ```
 
-`http://localhost:8787` で起動します（[wrangler dev](https://developers.cloudflare.com/workers/wrangler/commands/#dev) を使用）。
+`http://localhost:8787` で起動します。`pnpm dev` は次のことを行います。
+
+1. `vite build` を1回実行し、ブラウザ側バンドル（`src/client/` → `dist/app.js`, `dist/theme.js`）と `public/style.css` のコピーを `dist/` に生成
+2. `vite build --watch` と [wrangler dev](https://developers.cloudflare.com/workers/wrangler/commands/#dev) を並行起動（Ctrl-C で両方止まります）
+
+`dist/` は git 管理外で、`wrangler.jsonc` の `assets.directory` として Workers Static Assets の配信元になります。
+Worker 本体（`src/index.ts` など）は従来どおり wrangler がバンドルします。`vite.config.ts` を変更したときは `pnpm dev` を再起動してください。
+単発でブラウザ側だけビルドしたい場合は `pnpm build` を実行します。
 
 ローカル開発用の `SESSION_SECRET` は、git管理対象外の `.dev.vars` ファイルに以下のように設定します
 （`wrangler dev` がここから自動で読み込みます）。
@@ -59,6 +66,8 @@ pnpm lint
 pnpm fix   # 自動修正
 ```
 
+`pnpm typecheck` は `tsconfig.json`（Worker・テスト、DOM の型なし）と `src/client/tsconfig.json`（ブラウザ側、DOM の型あり）の両方を検査します。
+
 ### テスト
 
 ```bash
@@ -67,12 +76,16 @@ pnpm test
 
 [`@cloudflare/vitest-pool-workers`](https://developers.cloudflare.com/workers/testing/vitest-integration/) を使い、
 実際のWorkersランタイム(Miniflare)上でDurable Objectとルーティングをテストしています。
+`dist/` が無くてもテストは実行できます（テスト用の Miniflare はアセットディレクトリの存在を検証しません）。
 
 ## デプロイ
 
 ```bash
 pnpm deploy
 ```
+
+`pnpm deploy` は `vite build` でブラウザ側バンドルを生成してから `wrangler deploy --minify` を実行します。
+`wrangler deploy` を直接実行する場合は、先に `pnpm build` で `dist/` を作ってください（無いと起動時にエラーになります）。
 
 初回デプロイ前に、Cookie署名用のシークレットを本番用の値で設定してください。
 
@@ -87,8 +100,8 @@ pnpm exec wrangler secret put SESSION_SECRET
 
 GitHub Actions（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）で以下を自動化しています。
 
-- **CI**（`main`へのpush / 全PR）: `pnpm typecheck` / `pnpm lint` / `pnpm test` を実行
-- **CD**（`main`へのpush、CI成功後）: `wrangler deploy --minify` で本番デプロイ
+- **CI**（`main`へのpush / 全PR）: `pnpm typecheck` / `pnpm lint` / `pnpm build` / `pnpm test` を実行
+- **CD**（`main`へのpush、CI成功後）: `pnpm build` でブラウザ側バンドルを生成し、`wrangler deploy --minify` で本番デプロイ
 
 デプロイジョブを動かすには、リポジトリに以下のSecretsを設定してください（Settings → Environments →
 `production`、またはSettings → Secrets and variables → Actions）。
@@ -127,18 +140,26 @@ src/
   index.ts                    # Honoアプリのエントリポイント・ルーティング
   session.ts                  # ユーザーセッション(署名付きCookie)
   bindings.ts                 # Cloudflare Bindingsの型定義
-  types.ts                    # 部屋の状態・WebSocketメッセージの型
-  views.ts                    # サーバーサイドで返すHTML
+  types.ts                    # 部屋の状態・WebSocketメッセージの型（ブラウザ側とも共有）
+  views.tsx                   # サーバーサイドで返すHTML（hono/jsx の関数コンポーネント）
   durable-objects/
     poker-room.ts             # 部屋(プランニングセッション)を表すDurable Object
+  client/                     # ブラウザ側（hono/jsx/dom の関数コンポーネント。Vite で dist/ にバンドル）
+    app.tsx                   # ルーム画面のエントリ
+    room.tsx                  # ルーム画面のコンポーネント
+    use-room-socket.ts        # WebSocket 接続・再接続の hook
+    theme.tsx                 # ダークモード切り替え
+    tsconfig.json             # ブラウザ用 tsconfig（DOM の型あり）
 public/
-  app.js                      # ルーム画面のクライアントスクリプト（ビルド不要）
-  style.css
+  style.css                   # 静的ファイルのソース（vite build が dist/ にコピー）
+dist/                         # vite build の出力（git 管理外。Workers Static Assets の配信元）
+vite.config.ts                # ブラウザ側バンドルの設定
 docs/
   SESSION.md                  # セッション実装の解説（学習用）
 test/
   poker-room.test.ts
   session.test.ts
+  views.test.ts
 ```
 
 ## ライセンス
