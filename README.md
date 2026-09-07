@@ -101,7 +101,11 @@ pnpm exec wrangler secret put SESSION_SECRET
 GitHub Actions（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）で以下を自動化しています。
 
 - **CI**（`main`へのpush / 全PR）: `pnpm typecheck` / `pnpm lint` / `pnpm build` / `pnpm test` を実行
-- **CD**（`main`へのpush、CI成功後）: `pnpm build` でブラウザ側バンドルを生成し、`wrangler deploy --minify` で本番デプロイ
+- **CD**（Actionsタブから手動で "Run workflow" を実行、CI成功後）: `pnpm build` でブラウザ側バンドルを生成し、`wrangler deploy --minify` で本番デプロイ
+
+デプロイは`main`へのpushでは自動実行されません。複数のPRをマージしてからまとめてリリースできるよう、
+`.github/workflows/ci.yml` を選び、対象ブランチ（通常は`main`）を指定して手動で実行してください
+（GitHubリポジトリの Actions タブ → CI → Run workflow）。
 
 デプロイジョブを動かすには、リポジトリに以下のSecretsを設定してください（Settings → Environments →
 `production`、またはSettings → Secrets and variables → Actions）。
@@ -118,12 +122,12 @@ GitHub Actions（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）で以
 ### デプロイに承認を必須にする（本リポジトリはpublicなので推奨）
 
 デプロイジョブは `environment: production` を指定済みです。GitHubのEnvironment保護ルールで
-承認者を必須にすると、`main`へのpush自体は自動で走りますが、実際の`wrangler deploy`実行は
+承認者を必須にすると、手動で "Run workflow" を実行した後も、実際の`wrangler deploy`実行は
 指定した承認者の承認が下りるまで一時停止します。
 
 1. リポジトリの **Settings → Environments → New environment** で `production` という名前の環境を作成（既にあれば選択）
 2. **Deployment protection rules** の **Required reviewers** を有効化し、自分（または承認してほしいメンバー）を追加
-3. 保存後は、`main`へのpush → CI成功 → デプロイジョブが `Waiting` 状態になり、Actionsタブから承認するまでデプロイされない
+3. 保存後は、手動実行 → CI成功 → デプロイジョブが `Waiting` 状態になり、Actionsタブから承認するまでデプロイされない
 
 ### その他、publicリポジトリとして確認しておきたい設定
 
