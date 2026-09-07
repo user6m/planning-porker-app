@@ -8,7 +8,11 @@
 		"enabled": true
 	},
 	"assets": {
-		"directory": "./public"
+		// 静的アセットは `pnpm build` (vite build) が dist/ に出力する
+		// (src/client → app.js / theme.js、public/style.css はそのままコピー)。
+		// dist/ が存在しないと wrangler dev / wrangler deploy は起動時にエラーになるので先にビルドすること
+		// (package.json の dev / deploy スクリプトと CI が自動で行う)。
+		"directory": "./dist"
 	},
 	"durable_objects": {
 		"bindings": [

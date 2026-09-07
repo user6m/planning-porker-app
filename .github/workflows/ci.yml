@@ -55,6 +55,12 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # ブラウザ側バンドル (src/client → dist/) が壊れていないことを PR ごとに確認する。
+      # vitest 自体は dist/ が無くても動く (vitest-pool-workers は assets ディレクトリの存在を検証せず、
+      # Miniflare は空の一時ディレクトリで起動する) が、Vite 設定や TSX の変換エラーもここで検出する。
+      - name: Build client bundle
+        run: pnpm build
+
       - name: Test
         run: pnpm test
 
@@ -116,6 +122,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # wrangler deploy は dist/ をそのまま Static Assets としてアップロードするため、
+      # 先にブラウザ側バンドルを生成しておく (public/style.css もここで dist/ にコピーされる)。
+      # dist/ が無いと wrangler は assets.directory の存在チェックで失敗する。
+      - name: Build client bundle
+        run: pnpm build
 
       # 本番の SESSION_SECRET は `wrangler secret put` で別途設定済み。
       # wrangler.jsonc の vars には書かない (書くとデプロイのたびに

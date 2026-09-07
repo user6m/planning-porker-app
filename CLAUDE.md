@@ -17,7 +17,8 @@ Cloudflare Workers上で動くHonoアプリ + Durable Objects（部屋の状態�
 - 実行環境: Cloudflare Workers
 - 状態管理: Durable Objects（部屋ごとに1インスタンス、WebSocket Hibernation APIを使用）
 - ユーザー識別: サーバー側にDBを持たない、HMAC署名付きCookie
-- クライアント: `public/` 配下のビルド不要なプレーンJS/CSS
+- 画面: サーバー側は `hono/jsx` の関数コンポーネント（`src/views.tsx`）、ブラウザ側は `hono/jsx/dom` の関数コンポーネント（`src/client/*.tsx`）。React/Preact は使わない
+- ビルド: ブラウザ側のみ Vite 8（rolldown/oxc）で `src/client/` → `dist/` にバンドルする（`public/style.css` はコピー）。Worker 本体は従来通り wrangler がバンドル。開発サーバーは `wrangler dev` のまま（`@cloudflare/vite-plugin` は使わない）
 - Lint/Format: [Biome](https://biomejs.dev/)（タブインデント、ダブルクォート）
 - テスト: Vitest + `@cloudflare/vitest-pool-workers`（実際のWorkersランタイム=Miniflare上で実行）
 
@@ -25,17 +26,18 @@ Cloudflare Workers上で動くHonoアプリ + Durable Objects（部屋の状態�
 
 ```bash
 pnpm install       # 依存関係のインストール
-pnpm dev           # 開発サーバー起動 (wrangler dev, http://localhost:8787)
-pnpm typecheck     # 型チェック (tsc --noEmit)
+pnpm dev           # vite build → (vite build --watch + wrangler dev) を並行起動 (http://localhost:8787)
+pnpm build         # ブラウザ側バンドル (dist/) を生成
+pnpm typecheck     # 型チェック (tsconfig.json と src/client/tsconfig.json の両方)
 pnpm lint          # Biomeによるlint
 pnpm fix           # Biomeによる自動修正
-pnpm test          # テスト実行 (vitest run)
+pnpm test          # テスト実行 (vitest run)。dist/ が無くても動く
 pnpm test:watch    # テストのwatchモード
-pnpm deploy        # 本番デプロイ (wrangler deploy --minify)
+pnpm deploy        # vite build してから本番デプロイ (wrangler deploy --minify)
 pnpm cf-typegen    # wrangler.jsonc からBindingsの型を生成
 ```
 
-コードを変更したら、コミット前に `pnpm typecheck` / `pnpm lint` / `pnpm test` を通すこと。
+コードを変更したら、コミット前に `pnpm typecheck` / `pnpm lint` / `pnpm build` / `pnpm test` を通すこと。
 
 ## ローカル開発時のシークレット
 
@@ -49,6 +51,7 @@ SESSION_SECRET=dev-only-secret-change-me
 
 - `SESSION_SECRET` は `wrangler.jsonc` の `vars` に**絶対に書かない**こと。書くとデプロイのたびに平文の値でシークレットが上書きされる。
 - 本番用のシークレットは `pnpm exec wrangler secret put SESSION_SECRET` で設定する。
+- `wrangler.jsonc` の `assets.directory` は `./dist`（`pnpm build` の出力）。`dist/` が無いと `wrangler dev` / `wrangler deploy` は起動時に失敗するので、直接実行する前に `pnpm build` を行う（`pnpm dev` / `pnpm deploy` / CI は自動で行う）。
 
 ## バージョニング（CalVer）
 
@@ -71,7 +74,7 @@ mainブランチには「PR経由の変更のみ許可」「署名済みコミ�
 
 **前提設定:** リポジトリの Settings → General → Pull Requests で **Allow auto-merge** を有効にしておく必要がある（無効だと `gh pr merge --auto` が失敗する）。
 
-なお `deploy` ジョブは、変更ファイルが `**/*.md` / `docs/**` / `.github/ISSUE_TEMPLATE/**` / `.github/dependabot.yml` / `LICENSE` のようなドキュメント類だけの場合はスキップされる（`changes` ジョブが判定）。本番に影響するコード・設定の変更（`src/`, `public/`, `wrangler.jsonc`, `package.json` など）が含まれるpushでのみ実際にデプロイ・バージョン付与が行われる。
+なお `deploy` ジョブは、変更ファイルが `**/*.md` / `docs/**` / `.github/ISSUE_TEMPLATE/**` / `.github/dependabot.yml` / `LICENSE` のようなドキュメント類だけの場合はスキップされる（`changes` ジョブが判定）。本番に影響するコード・設定の変更（`src/`, `public/`, `vite.config.ts`, `wrangler.jsonc`, `package.json` など）が含まれるpushでのみ実際にデプロイ・バージョン付与が行われる。
 
 ## アーキテクチャ・主要ファイル
 
@@ -80,20 +83,38 @@ src/
   index.ts                    # Honoアプリのエントリポイント・ルーティング
   session.ts                  # 署名付きCookieによるユーザーセッション（DBなし）
   bindings.ts                 # Cloudflare Bindingsの型定義
-  types.ts                    # 部屋の状態・WebSocketメッセージの型
-  views.ts                    # サーバーサイドで返すHTML
+  types.ts                    # 部屋の状態・WebSocketメッセージの型（ブラウザ側とも共有）
+  views.tsx                   # サーバーサイドで返すHTML（hono/jsx の関数コンポーネント）
   durable-objects/
     poker-room.ts             # 部屋(プランニングセッション)を表すDurable Object
+  client/                     # ブラウザ側（hono/jsx/dom）。Vite で dist/ にバンドルされ、Worker からは import しない
+    app.tsx                   # ルーム画面のエントリ（.page-room の data-* を読んで RoomApp を render）
+    room.tsx                  # ルーム画面のコンポーネント群
+    use-room-socket.ts        # WebSocket 接続・再接続・join を担う hook
+    theme.tsx                 # ダークモード切り替え（ThemeToggle）
+    tsconfig.json             # ブラウザ用 tsconfig（DOM lib + jsxImportSource: hono/jsx/dom）
 public/
-  app.js                      # ルーム画面のクライアントスクリプト（ビルド不要）
-  style.css
+  style.css                   # 静的ファイルのソース（vite build が dist/ にコピー）
+dist/                         # vite build の出力（git 管理外。wrangler の assets.directory）
+vite.config.ts                # ブラウザ側バンドルの設定
 docs/
   SESSION.md                  # セッション/Durable Objects実装の解説（学習用）
 test/
   poker-room.test.ts
   session.test.ts
+  views.test.ts               # ルート経由でレンダリング結果を検証
 ```
 
 - 部屋の状態（参加者・投票）はDurable Objectの `ctx.storage` に永続化される。メモリ上にしか保持しないとハイバネート時に消える。
 - WebSocket通信はHibernation API（`acceptWebSocket` / `webSocketMessage` / `webSocketClose`）を使う。誰も通信していない間はDOをスリープさせる前提の実装なので、状態はメッセージ処理のたびに `ctx.storage` へ書き戻す必要がある。
 - ユーザー識別はCookie（`pp_session`）のみで、ログイン機能やDBは存在しない。
+
+### JSX / コンポーネントのルール
+
+- `src/client` は Worker から import しない（サーバー側 tsconfig は DOM の型を含まず、ブラウザ側は Workers の型を含まない）。共有してよいのは `src/types.ts` だけ。
+- ブラウザ側のコードは `render` も hooks も型もすべて `hono/jsx/dom` から import する（`hono/jsx` の `Fragment` / `memo` はサーバー実装なので混ぜない）。
+- JSX の属性は `class` / `for` / `maxlength` など HTML 名で書く（hono/jsx の型はそちらが正）。
+- サーバー側で生の HTML/JS（DOCTYPE、FOUC 防止スクリプト、SVG など）を出力するときは `hono/html` の `html` タグ付きテンプレート / `raw()` を子要素として渡す。hono/jsx は `<script>` の中身も含めて文字列をエスケープする。`<script src>` に `async` を付けると `<head>` に巻き上げられるので付けない。
+- ルーム画面の `<main class="page page-room">` の中身はブラウザ側が丸ごと描画する（`render()` は `replaceChildren` で置き換えるため、SSR で中に入れたものは消える）。サーバーから追加の HTML を渡したい場合は `<main>` の外に置く。
+- ブラウザ側の WebSocket 接続は `useLayoutEffect` で開始する（`useEffect` は requestAnimationFrame 経由で遅延され、バックグラウンドタブでは実行されない）。`setState` はマイクロタスクでまとめて反映されるので、同じハンドラ内で送信に使う値はイベントや ref から直接取る。
+- DOM の id / class を変えるときは `public/style.css` と `test/views.test.ts` を確認する。
