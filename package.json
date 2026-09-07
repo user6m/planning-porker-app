@@ -17,7 +17,8 @@
 		"version:bump": "node scripts/bump-calver.mjs"
 	},
 	"dependencies": {
-		"hono": "^4.13.7"
+		"hono": "^4.13.7",
+		"qrcode-generator": "^2.0.4"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.11",
