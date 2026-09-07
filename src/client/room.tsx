@@ -1,6 +1,7 @@
 import type { FC } from "hono/jsx/dom";
 import { useRef, useState } from "hono/jsx/dom";
 import { CARD_DECK, type CardValue, type RoomState } from "../types";
+import { RoomQrCode } from "./qr-code";
 import { useRoomSocket } from "./use-room-socket";
 
 const RENAME_DEBOUNCE_MS = 400;
@@ -109,6 +110,7 @@ const RoomHeader: FC<{
 			<p class="room-code">
 				部屋コード: <code>{roomId}</code> <CopyLinkButton />
 			</p>
+			<RoomQrCode />
 		</div>
 		<div class="me">
 			<label>

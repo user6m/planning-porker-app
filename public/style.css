@@ -147,6 +147,39 @@ button.secondary {
 	padding: 0.1rem 0.4rem;
 }
 
+.qr-details {
+	margin-top: 0.6rem;
+}
+
+.qr-details summary {
+	cursor: pointer;
+	color: var(--accent);
+	font-size: 0.9rem;
+	user-select: none;
+}
+
+.qr-code {
+	display: inline-block;
+	background: #ffffff;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 0.75rem;
+	margin-top: 0.6rem;
+}
+
+.qr-code svg {
+	display: block;
+	width: 160px;
+	height: 160px;
+}
+
+.qr-url {
+	font-size: 0.8rem;
+	color: var(--muted);
+	word-break: break-all;
+	max-width: 220px;
+}
+
 .me {
 	display: flex;
 	flex-direction: column;
