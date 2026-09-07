@@ -61,6 +61,7 @@ export const RoomApp: FC<{
 
 	return (
 		<>
+			<RoomQrCode />
 			<RoomHeader
 				roomId={roomId}
 				roomName={roomName}
@@ -110,7 +111,6 @@ const RoomHeader: FC<{
 			<p class="room-code">
 				部屋コード: <code>{roomId}</code> <CopyLinkButton />
 			</p>
-			<RoomQrCode />
 		</div>
 		<div class="me">
 			<label>

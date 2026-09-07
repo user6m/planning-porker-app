@@ -33,21 +33,18 @@ export const RoomQrCode: FC = () => {
 	const size = qr.getModuleCount() + MARGIN * 2;
 
 	return (
-		<details class="qr-details">
-			<summary>QRコードを表示</summary>
-			<div class="qr-code">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox={`0 0 ${size} ${size}`}
-					shape-rendering="crispEdges"
-					role="img"
-					aria-label="部屋の招待URLのQRコード"
-				>
-					<rect width={size} height={size} fill="#ffffff" />
-					<path stroke="#000000" d={buildQrPath(qr)} />
-				</svg>
-			</div>
-			<p class="qr-url">{url}</p>
-		</details>
+		<div class="qr-widget">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox={`0 0 ${size} ${size}`}
+				shape-rendering="crispEdges"
+				role="img"
+				aria-label="部屋の招待URLのQRコード"
+			>
+				<rect width={size} height={size} fill="#ffffff" />
+				<path stroke="#000000" d={buildQrPath(qr)} />
+			</svg>
+			<p class="qr-widget-caption">スキャンして参加</p>
+		</div>
 	);
 };
