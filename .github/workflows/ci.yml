@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, closed]
+  # 複数PRをマージしてからまとめてリリースできるよう、デプロイはmainへのpushでは
+  # 自動実行せず、手動での workflow_dispatch をトリガーにする (deploy job参照)。
+  # デフォルトブランチ (main) を選んで実行する想定。
+  workflow_dispatch:
 
 concurrency:
   # pull_request(特にclosed = マージ後)イベントのgithub.refは、PRごとの
@@ -72,37 +76,13 @@ jobs:
       - name: Test
         run: pnpm test
 
-  changes:
-    name: Detect production-relevant changes
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    outputs:
-      should_deploy: ${{ steps.filter.outputs.docsOnly != 'true' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          # push前後のdiffを取るため履歴を全取得する。
-          fetch-depth: 0
-
-      # 変更ファイルがドキュメント類だけ (docsOnly) なら本番に影響しないためデプロイをスキップする。
-      - name: Check changed files
-        id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          predicate-quantifier: every
-          filters: |
-            docsOnly:
-              - '**/*.md'
-              - 'docs/**'
-              - '.github/ISSUE_TEMPLATE/**'
-              - '.github/dependabot.yml'
-              - 'LICENSE'
-
   deploy:
     name: Deploy to Cloudflare Workers
-    needs: [test, changes]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.should_deploy == 'true'
+    needs: [test]
+    # 複数PRをまとめてリリースできるよう、mainへのpushでは自動デプロイせず、
+    # Actionsタブから手動で "Run workflow" (workflow_dispatch) した時だけ実行する。
+    # 対象コミットは、実行時に選んだブランチ/タグ (通常はmain) のHEAD。
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # production環境にRequired reviewersを設定すると、ここであなたの
     # 承認待ちになりデプロイが自動実行されなくなる

@@ -60,7 +60,11 @@ SESSION_SECRET=dev-only-secret-change-me
 - `YYYY.MM`: リリースした年月（UTC）
 - `MICRO`: 同じ年月内で何回目のリリースか（0始まり）。月が変わったら0にリセットされる
 
-CI (`.github/workflows/ci.yml`) の `deploy` ジョブが、mainへのpushで本番デプロイに成功した直後に自動で
+`deploy` ジョブはmainへのpushでは自動実行されない。複数PRをマージしてからまとめてリリースできるよう、
+GitHubリポジトリの Actions タブから `CI` ワークフローを手動実行 (`workflow_dispatch`、対象ブランチは通常`main`) した
+ときだけデプロイが走る。
+
+CI (`.github/workflows/ci.yml`) の `deploy` ジョブが、本番デプロイに成功した直後に自動で
 
 1. `scripts/bump-calver.mjs`（`pnpm version:bump`）で既存の `v<year>.<month>.*` タグから次のバージョンを算出し `package.json` に書き込む
 2. `package.json` に差分がある場合、`chore/release-vX.Y.Z` ブランチを作って `chore: release vX.Y.Z` コミットをpushし、`chore: release vX.Y.Z` PRを作成した上でGitHub Nativeのauto-merge（squash）を予約する（前回リリースと同じバージョンで差分が無い場合はコミット・PR作成をスキップし3.へ）
@@ -74,7 +78,7 @@ mainブランチには「PR経由の変更のみ許可」「署名済みコミ�
 
 **前提設定:** リポジトリの Settings → General → Pull Requests で **Allow auto-merge** を有効にしておく必要がある（無効だと `gh pr merge --auto` が失敗する）。
 
-なお `deploy` ジョブは、変更ファイルが `**/*.md` / `docs/**` / `.github/ISSUE_TEMPLATE/**` / `.github/dependabot.yml` / `LICENSE` のようなドキュメント類だけの場合はスキップされる（`changes` ジョブが判定）。本番に影響するコード・設定の変更（`src/`, `public/`, `vite.config.ts`, `wrangler.jsonc`, `package.json` など）が含まれるpushでのみ実際にデプロイ・バージョン付与が行われる。
+デプロイは手動実行のみなので、ドキュメントだけの変更かどうかによるスキップ判定は行わない（実行するかどうかは手動実行する側の判断に委ねる）。
 
 ## アーキテクチャ・主要ファイル
 
