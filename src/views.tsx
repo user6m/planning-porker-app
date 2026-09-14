@@ -48,10 +48,11 @@ function page(title: string, body: Child) {
 	return html`<!doctype html>${<Layout title={title}>{body}</Layout>}`;
 }
 
-const HomePage: FC<{ session: UserSession; error?: string }> = ({
-	session,
-	error,
-}) => (
+const HomePage: FC<{
+	session: UserSession;
+	defaultRoomName: string;
+	error?: string;
+}> = ({ session, defaultRoomName, error }) => (
 	<main class="page page-home">
 		<h1>🃏 プランニングポーカー</h1>
 		<p class="lead">
@@ -66,6 +67,7 @@ const HomePage: FC<{ session: UserSession; error?: string }> = ({
 					<input
 						type="text"
 						name="roomName"
+						value={defaultRoomName}
 						placeholder="例: スプリント12 見積もり"
 						maxlength={100}
 						required
@@ -120,10 +122,18 @@ const RoomPage: FC<{ roomId: string; session: UserSession }> = ({
 	</>
 );
 
-export function renderHome(session: UserSession, error?: string) {
+export function renderHome(
+	session: UserSession,
+	defaultRoomName: string,
+	error?: string,
+) {
 	return page(
 		"プランニングポーカー",
-		<HomePage session={session} error={error} />,
+		<HomePage
+			session={session}
+			defaultRoomName={defaultRoomName}
+			error={error}
+		/>,
 	);
 }
 
