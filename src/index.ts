@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Bindings } from "./bindings";
+import { generateRoomName } from "./room-name";
 import { getOrCreateSession, persistSession } from "./session";
 import { renderHome, renderRoom } from "./views";
 
@@ -24,7 +25,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 app.get("/", async (c) => {
 	const session = await getOrCreateSession(c);
-	return c.html(renderHome(session));
+	return c.html(renderHome(session, generateRoomName()));
 });
 
 app.post("/rooms", async (c) => {
@@ -35,7 +36,12 @@ app.post("/rooms", async (c) => {
 	const session = await getOrCreateSession(c);
 	if (!roomName || !hostName) {
 		return c.html(
-			renderHome(session, "部屋の名前と表示名を入力してください"),
+			// 入力済みの部屋名は残し、空のときだけ新しい既定値を入れ直す
+			renderHome(
+				session,
+				roomName || generateRoomName(),
+				"部屋の名前と表示名を入力してください",
+			),
 			400,
 		);
 	}
