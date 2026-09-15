@@ -68,6 +68,19 @@ describe("PokerRoom", () => {
 		expect((await res.json<{ roomName: string }>()).roomName).toBe("部屋B");
 	});
 
+	it("reports errors as a code so the client can localize them", async () => {
+		const stub = await initRoom("room-error", "エラー確認");
+		const alice = await connect(stub, "alice", "Alice");
+		await nextMessage(alice); // 参加直後の state
+
+		const errorPromise = nextMessage(alice);
+		alice.send(JSON.stringify({ type: "vote", value: "999" }));
+		expect(await errorPromise).toEqual({
+			type: "error",
+			code: "invalid_card",
+		});
+	});
+
 	it("broadcasts state when a participant joins and votes", async () => {
 		const stub = await initRoom("room-vote", "見積もり会");
 		const alice = await connect(stub, "alice", "Alice");

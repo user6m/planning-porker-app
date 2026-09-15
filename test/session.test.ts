@@ -1,16 +1,17 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import type { Bindings } from "../src/bindings";
+import { resolveLocale } from "../src/locale";
 import { getOrCreateSession, persistSession } from "../src/session";
 
 function makeApp() {
 	const app = new Hono<{ Bindings: Bindings }>();
 	app.get("/whoami", async (c) => {
-		const session = await getOrCreateSession(c);
+		const session = await getOrCreateSession(c, resolveLocale(c));
 		return c.json(session);
 	});
 	app.post("/rename", async (c) => {
-		const session = await getOrCreateSession(c);
+		const session = await getOrCreateSession(c, resolveLocale(c));
 		const renamed = { ...session, name: "リネーム後" };
 		await persistSession(c, renamed);
 		return c.json(renamed);
@@ -31,6 +32,17 @@ describe("session cookie", () => {
 		const body = await res.json<{ userId: string; name: string }>();
 		expect(body.userId).toMatch(/^[0-9a-f-]{36}$/);
 		expect(body.name).toMatch(/^ゲスト\d{4}$/);
+	});
+
+	it("names a new guest in the language of the request", async () => {
+		const app = makeApp();
+		const res = await app.request(
+			"/whoami",
+			{ headers: { "accept-language": "en-US,en;q=0.9" } },
+			testEnv,
+		);
+		const body = await res.json<{ name: string }>();
+		expect(body.name).toMatch(/^Guest\d{4}$/);
 	});
 
 	it("reuses the same identity across requests that send the cookie back", async () => {

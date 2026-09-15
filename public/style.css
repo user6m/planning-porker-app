@@ -156,7 +156,7 @@ button.secondary {
 
 .qr-widget {
 	flex-shrink: 0;
-	/* ページ右上に固定表示される theme-toggle ボタン (top: 1rem, 高さ 2.6rem) と重ならないよう間隔を空ける */
+	/* ページ右上に固定表示される corner-controls (top: 1rem, 高さ 2.6rem) と重ならないよう間隔を空ける */
 	margin-top: 2.5rem;
 	background: #ffffff;
 	border: 1px solid var(--border);
@@ -279,10 +279,18 @@ button.secondary {
 	padding: 1.5rem 1.25rem;
 }
 
-.theme-toggle {
+/* 言語切り替えとテーマ切り替えをまとめてページ右上に固定する */
+.corner-controls {
 	position: fixed;
 	top: 1rem;
 	right: 1rem;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.theme-toggle {
 	width: 2.6rem;
 	height: 2.6rem;
 	padding: 0;
@@ -292,4 +300,36 @@ button.secondary {
 	background: var(--card-bg);
 	color: var(--fg);
 	border: 1px solid var(--border);
+}
+
+.lang-toggle {
+	display: inline-flex;
+	align-items: center;
+	height: 2.6rem;
+	padding: 0 0.85rem;
+	font-size: 0.8rem;
+	font-weight: 600;
+	line-height: 1;
+	white-space: nowrap;
+	border-radius: 1.3rem;
+	background: var(--card-bg);
+	color: var(--fg);
+	border: 1px solid var(--border);
+	text-decoration: none;
+}
+
+.lang-toggle:hover {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+/* 画面が狭いと右上の corner-controls が見出しに重なるので、本文をその下から始める */
+@media (max-width: 40rem) {
+	.page {
+		padding-top: 4.2rem;
+	}
+
+	.qr-widget {
+		margin-top: 0;
+	}
 }

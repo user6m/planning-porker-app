@@ -7,6 +7,7 @@
 - 🔤 言語: TypeScript
 - 🧩 フレームワーク: [Hono](https://hono.dev/)
 - 🗄️ データストア: [Durable Objects](https://developers.cloudflare.com/durable-objects/)（部屋の状態）+ 署名付きCookie（ユーザー識別）
+- 🌍 表示言語: 日本語 / 英語（ブラウザの言語設定で自動判別、右上のボタンでいつでも切り替え）
 - 🔗 公開URL: https://planning-porker-app.te0.workers.dev/ （登録不要ですぐ使えます）
 
 ## なぜこの構成か
@@ -29,6 +30,9 @@ DBのトランザクションやポーリングなしに、投票の競合を防
 2. 発行された部屋コード付きのURLをチームに共有
 3. 各自カードを選んで見積もりを入力 → ファシリテーターが「公開する」を押すと全員の投票が一斉に表示される
 4. 議論後、「リセット」で次のissueの見積もりへ
+
+画面の表示言語は日本語と英語に対応しています。初回はブラウザの言語設定（`Accept-Language`）から自動で選ばれ、
+画面右上のボタンで切り替えられます。選んだ言語は Cookie (`pp_lang`) に保存されるので、次回以降もそのまま使えます。
 
 ## セットアップ
 
@@ -143,8 +147,11 @@ GitHub Actions（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）で以
 src/
   index.ts                    # Honoアプリのエントリポイント・ルーティング
   session.ts                  # ユーザーセッション(署名付きCookie)
+  locale.ts                   # 表示言語の判定・Cookieへの保存(Worker側)
+  room-name.ts                # 部屋名の既定値の自動生成
   bindings.ts                 # Cloudflare Bindingsの型定義
   types.ts                    # 部屋の状態・WebSocketメッセージの型（ブラウザ側とも共有）
+  i18n.ts                     # 日本語/英語の文言定義（ブラウザ側とも共有）
   views.tsx                   # サーバーサイドで返すHTML（hono/jsx の関数コンポーネント）
   durable-objects/
     poker-room.ts             # 部屋(プランニングセッション)を表すDurable Object
@@ -152,7 +159,9 @@ src/
     app.tsx                   # ルーム画面のエントリ
     room.tsx                  # ルーム画面のコンポーネント
     use-room-socket.ts        # WebSocket 接続・再接続の hook
+    qr-code.tsx               # 招待URLのQRコード
     theme.tsx                 # ダークモード切り替え
+    locale.ts                 # <html lang> から表示言語を読み取る
     tsconfig.json             # ブラウザ用 tsconfig（DOM の型あり）
 public/
   style.css                   # 静的ファイルのソース（vite build が dist/ にコピー）

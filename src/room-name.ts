@@ -1,3 +1,5 @@
+import { type Locale, messagesFor } from "./i18n";
+
 /**
  * 部屋名の初期値を自動生成する。
  *
@@ -5,7 +7,7 @@
  * ランダムな既定値を用意しておくためのもの。ユーザーはそのまま使っても、
  * 好きな名前に書き換えてもよい。
  */
-export function generateRoomName(): string {
+export function generateRoomName(locale: Locale): string {
 	const n = Math.floor(Math.random() * 9000) + 1000;
-	return `見積もり${n}`;
+	return messagesFor(locale).defaultRoomName(n);
 }
