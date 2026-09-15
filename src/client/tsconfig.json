@@ -6,6 +6,6 @@
 		"jsxImportSource": "hono/jsx/dom",
 		"types": []
 	},
-	"include": ["./**/*", "../types.ts"],
+	"include": ["./**/*", "../types.ts", "../i18n.ts"],
 	"exclude": []
 }

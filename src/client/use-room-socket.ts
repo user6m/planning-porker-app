@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "hono/jsx/dom";
 import type { ClientMessage, RoomState, ServerMessage } from "../types";
+import { t } from "./locale";
 
 /**
  * 部屋の WebSocket 接続を管理する hook。
@@ -41,7 +42,7 @@ export function useRoomSocket(
 
 			socket.addEventListener("open", () => {
 				reconnectDelayMs = 500;
-				setStatus("接続中");
+				setStatus(t.room.connected);
 				send(joinRef.current());
 			});
 
@@ -50,13 +51,13 @@ export function useRoomSocket(
 				if (message.type === "state") {
 					setState(message.state);
 				} else if (message.type === "error") {
-					setStatus(`エラー: ${message.message}`);
+					setStatus(t.room.error(t.errors[message.code]));
 				}
 			});
 
 			socket.addEventListener("close", () => {
 				if (disposed) return;
-				setStatus("切断されました。再接続しています…");
+				setStatus(t.room.reconnecting);
 				reconnectTimer = setTimeout(connect, reconnectDelayMs);
 				reconnectDelayMs = Math.min(reconnectDelayMs * 2, 8000);
 			});

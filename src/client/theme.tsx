@@ -1,6 +1,7 @@
 // ダークモード切り替えボタン (全ページ共通、/theme.js としてバンドルされる)。
 // テーマ自体の初期適用は src/views.tsx のインラインスクリプト (FOUC 防止) が行う。
 import { render, useState } from "hono/jsx/dom";
+import { t } from "./locale";
 
 type Theme = "dark" | "light" | "auto";
 
@@ -39,7 +40,7 @@ function ThemeToggle() {
 			id="theme-toggle"
 			class="theme-toggle"
 			type="button"
-			aria-label="表示テーマを切り替え"
+			aria-label={t.themeToggleLabel}
 			onClick={toggle}
 		>
 			{icon(theme)}

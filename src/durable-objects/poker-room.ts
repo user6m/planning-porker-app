@@ -106,7 +106,7 @@ export class PokerRoom extends DurableObject<Bindings> {
 				typeof raw === "string" ? raw : new TextDecoder().decode(raw);
 			message = JSON.parse(text);
 		} catch {
-			this.send(ws, { type: "error", message: "メッセージの形式が不正です" });
+			this.send(ws, { type: "error", code: "invalid_message" });
 			return;
 		}
 
@@ -118,14 +118,11 @@ export class PokerRoom extends DurableObject<Bindings> {
 			}
 			case "vote": {
 				if (this.room.revealed) {
-					this.send(ws, {
-						type: "error",
-						message: "公開後は投票し直せません。リセットしてください",
-					});
+					this.send(ws, { type: "error", code: "vote_after_reveal" });
 					return;
 				}
 				if (!(CARD_DECK as readonly string[]).includes(message.value)) {
-					this.send(ws, { type: "error", message: "無効なカードです" });
+					this.send(ws, { type: "error", code: "invalid_card" });
 					return;
 				}
 				participant.vote = message.value;

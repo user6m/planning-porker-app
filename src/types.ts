@@ -43,6 +43,16 @@ export type ClientMessage =
 	| { type: "reset" }
 	| { type: "rename"; name: string };
 
+/**
+ * サーバーから通知するエラーの種類。
+ * 文言そのものではなくコードを送り、表示言語に合わせた文字列への変換は
+ * ブラウザ側 (src/i18n.ts の Messages.errors) で行う。
+ */
+export type ErrorCode =
+	| "invalid_message"
+	| "vote_after_reveal"
+	| "invalid_card";
+
 export type ServerMessage =
 	| { type: "state"; state: RoomState }
-	| { type: "error"; message: string };
+	| { type: "error"; code: ErrorCode };

@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { getSignedCookie, setSignedCookie } from "hono/cookie";
 import type { Bindings } from "./bindings";
+import { type Locale, messagesFor } from "./i18n";
 
 /**
  * 「ユーザーセッション」= このブラウザが誰なのかを覚えておく仕組み。
@@ -16,17 +17,19 @@ export interface UserSession {
 	name: string;
 }
 
-function generateGuestName(): string {
+function generateGuestName(locale: Locale): string {
 	const n = Math.floor(Math.random() * 9000) + 1000;
-	return `ゲスト${n}`;
+	return messagesFor(locale).guestName(n);
 }
 
 /**
  * Cookie から署名済みセッションを読み取る。
  * 署名が無い/不正/未設定の場合は新しいセッションを発行してCookieにセットする。
+ * 新規発行時の既定の表示名は表示言語 (locale) に合わせる。
  */
 export async function getOrCreateSession(
 	c: Context<{ Bindings: Bindings }>,
+	locale: Locale,
 ): Promise<UserSession> {
 	const raw = await getSignedCookie(c, c.env.SESSION_SECRET, COOKIE_NAME);
 
@@ -46,7 +49,7 @@ export async function getOrCreateSession(
 
 	const session: UserSession = {
 		userId: crypto.randomUUID(),
-		name: generateGuestName(),
+		name: generateGuestName(locale),
 	};
 	await persistSession(c, session);
 	return session;

@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import type { Bindings } from "./bindings";
+import { isLocale, messagesFor } from "./i18n";
+import { persistLocale, resolveLocale, safeReturnPath } from "./locale";
 import { generateRoomName } from "./room-name";
 import { getOrCreateSession, persistSession } from "./session";
 import { renderHome, renderRoom } from "./views";
@@ -23,9 +25,17 @@ function normalizeRoomId(input: string): string {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+// 表示言語の切り替え。選んだ言語を Cookie に記録し、元のページへ戻す
+app.get("/lang/:locale", (c) => {
+	const locale = c.req.param("locale");
+	if (isLocale(locale)) persistLocale(c, locale);
+	return c.redirect(safeReturnPath(c.req.query("to")), 303);
+});
+
 app.get("/", async (c) => {
-	const session = await getOrCreateSession(c);
-	return c.html(renderHome(session, generateRoomName()));
+	const locale = resolveLocale(c);
+	const session = await getOrCreateSession(c, locale);
+	return c.html(renderHome(locale, session, generateRoomName(locale)));
 });
 
 app.post("/rooms", async (c) => {
@@ -33,14 +43,16 @@ app.post("/rooms", async (c) => {
 	const roomName = String(body.roomName ?? "").trim();
 	const hostName = String(body.hostName ?? "").trim();
 
-	const session = await getOrCreateSession(c);
+	const locale = resolveLocale(c);
+	const session = await getOrCreateSession(c, locale);
 	if (!roomName || !hostName) {
 		return c.html(
 			// 入力済みの部屋名は残し、空のときだけ新しい既定値を入れ直す
 			renderHome(
+				locale,
 				session,
-				roomName || generateRoomName(),
-				"部屋の名前と表示名を入力してください",
+				roomName || generateRoomName(locale),
+				messagesFor(locale).home.missingFields,
 			),
 			400,
 		);
@@ -68,8 +80,9 @@ app.get("/rooms/join", async (c) => {
 
 app.get("/rooms/:id", async (c) => {
 	const roomId = normalizeRoomId(c.req.param("id"));
-	const session = await getOrCreateSession(c);
-	return c.html(renderRoom(roomId, session));
+	const locale = resolveLocale(c);
+	const session = await getOrCreateSession(c, locale);
+	return c.html(renderRoom(locale, roomId, session));
 });
 
 app.get("/rooms/:id/ws", async (c) => {
@@ -78,7 +91,7 @@ app.get("/rooms/:id/ws", async (c) => {
 	}
 
 	const roomId = normalizeRoomId(c.req.param("id"));
-	const session = await getOrCreateSession(c);
+	const session = await getOrCreateSession(c, resolveLocale(c));
 
 	const stub = c.env.POKER_ROOM.get(c.env.POKER_ROOM.idFromName(roomId));
 	const url = new URL("https://poker-room.internal/websocket");

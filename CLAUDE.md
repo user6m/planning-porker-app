@@ -17,6 +17,7 @@ Cloudflare Workers上で動くHonoアプリ + Durable Objects（部屋の状態�
 - 実行環境: Cloudflare Workers
 - 状態管理: Durable Objects（部屋ごとに1インスタンス、WebSocket Hibernation APIを使用）
 - ユーザー識別: サーバー側にDBを持たない、HMAC署名付きCookie
+- 表示言語: 日本語 / 英語（`src/i18n.ts` に文言を集約。判定結果は `pp_lang` Cookie に保存）
 - 画面: サーバー側は `hono/jsx` の関数コンポーネント（`src/views.tsx`）、ブラウザ側は `hono/jsx/dom` の関数コンポーネント（`src/client/*.tsx`）。React/Preact は使わない
 - ビルド: ブラウザ側のみ Vite 8（rolldown/oxc）で `src/client/` → `dist/` にバンドルする（`public/style.css` はコピー）。Worker 本体は従来通り wrangler がバンドル。開発サーバーは `wrangler dev` のまま（`@cloudflare/vite-plugin` は使わない）
 - Lint/Format: [Biome](https://biomejs.dev/)（タブインデント、ダブルクォート）
@@ -86,8 +87,10 @@ mainブランチには「PR経由の変更のみ許可」「署名済みコミ�
 src/
   index.ts                    # Honoアプリのエントリポイント・ルーティング
   session.ts                  # 署名付きCookieによるユーザーセッション（DBなし）
+  locale.ts                   # リクエストからの表示言語判定・Cookieへの保存（Worker側）
   bindings.ts                 # Cloudflare Bindingsの型定義
   types.ts                    # 部屋の状態・WebSocketメッセージの型（ブラウザ側とも共有）
+  i18n.ts                     # 日本語/英語の文言定義（ブラウザ側とも共有。DOM/Workers に依存しないこと）
   views.tsx                   # サーバーサイドで返すHTML（hono/jsx の関数コンポーネント）
   durable-objects/
     poker-room.ts             # 部屋(プランニングセッション)を表すDurable Object
@@ -96,6 +99,7 @@ src/
     room.tsx                  # ルーム画面のコンポーネント群
     use-room-socket.ts        # WebSocket 接続・再接続・join を担う hook
     theme.tsx                 # ダークモード切り替え（ThemeToggle）
+    locale.ts                 # <html lang> から表示言語を読み取り、文言 `t` を公開する
     tsconfig.json             # ブラウザ用 tsconfig（DOM lib + jsxImportSource: hono/jsx/dom）
 public/
   style.css                   # 静的ファイルのソース（vite build が dist/ にコピー）
@@ -112,13 +116,25 @@ test/
 - 部屋の状態（参加者・投票）はDurable Objectの `ctx.storage` に永続化される。メモリ上にしか保持しないとハイバネート時に消える。
 - WebSocket通信はHibernation API（`acceptWebSocket` / `webSocketMessage` / `webSocketClose`）を使う。誰も通信していない間はDOをスリープさせる前提の実装なので、状態はメッセージ処理のたびに `ctx.storage` へ書き戻す必要がある。
 - ユーザー識別はCookie（`pp_session`）のみで、ログイン機能やDBは存在しない。
+- Durable Object は部屋ごとの状態をインスタンス変数に持つが、初期値にモジュールスコープのオブジェクトを
+  共有してはいけない（同じ isolate に載った別の部屋どうしで状態が混ざる）。必ず新しいオブジェクトを生成する。
 
 ### JSX / コンポーネントのルール
 
-- `src/client` は Worker から import しない（サーバー側 tsconfig は DOM の型を含まず、ブラウザ側は Workers の型を含まない）。共有してよいのは `src/types.ts` だけ。
+- `src/client` は Worker から import しない（サーバー側 tsconfig は DOM の型を含まず、ブラウザ側は Workers の型を含まない）。共有してよいのは `src/types.ts` と `src/i18n.ts` だけで、どちらも DOM / Workers の API に依存しない純粋な TypeScript に保つ（共有ファイルを増やすときは `src/client/tsconfig.json` の `include` にも追加する）。
 - ブラウザ側のコードは `render` も hooks も型もすべて `hono/jsx/dom` から import する（`hono/jsx` の `Fragment` / `memo` はサーバー実装なので混ぜない）。
 - JSX の属性は `class` / `for` / `maxlength` など HTML 名で書く（hono/jsx の型はそちらが正）。
 - サーバー側で生の HTML/JS（DOCTYPE、FOUC 防止スクリプト、SVG など）を出力するときは `hono/html` の `html` タグ付きテンプレート / `raw()` を子要素として渡す。hono/jsx は `<script>` の中身も含めて文字列をエスケープする。`<script src>` に `async` を付けると `<head>` に巻き上げられるので付けない。
 - ルーム画面の `<main class="page page-room">` の中身はブラウザ側が丸ごと描画する（`render()` は `replaceChildren` で置き換えるため、SSR で中に入れたものは消える）。サーバーから追加の HTML を渡したい場合は `<main>` の外に置く。
 - ブラウザ側の WebSocket 接続は `useLayoutEffect` で開始する（`useEffect` は requestAnimationFrame 経由で遅延され、バックグラウンドタブでは実行されない）。`setState` はマイクロタスクでまとめて反映されるので、同じハンドラ内で送信に使う値はイベントや ref から直接取る。
 - DOM の id / class を変えるときは `public/style.css` と `test/views.test.ts` を確認する。
+
+### 表示言語（i18n）のルール
+
+- 画面に出す文言は直書きせず `src/i18n.ts` の `Messages` に追加する。`Messages` は interface で型付けしてあるので、
+  日本語だけ足して英語を忘れると型エラーになる。
+- サーバー側は `messagesFor(locale)`、ブラウザ側は `src/client/locale.ts` の `t` から参照する
+  （ブラウザ側の言語はサーバーが出力した `<html lang>` から読む）。
+- 表示言語の決定順は「`pp_lang` Cookie（`/lang/:locale` で切り替え）→ `Accept-Language` → 既定の日本語」。
+- Durable Object はユーザーの言語を知らないので、エラーは文言ではなく `ErrorCode`（`src/types.ts`）を送り、
+  ブラウザ側で `t.errors[code]` に変換する。

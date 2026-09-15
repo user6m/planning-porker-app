@@ -1,11 +1,12 @@
 import type { FC } from "hono/jsx/dom";
 import { useRef, useState } from "hono/jsx/dom";
 import { CARD_DECK, type CardValue, type RoomState } from "../types";
+import { t } from "./locale";
 import { RoomQrCode } from "./qr-code";
 import { useRoomSocket } from "./use-room-socket";
 
 const RENAME_DEBOUNCE_MS = 400;
-const DEFAULT_NAME = "ゲスト";
+const DEFAULT_NAME = t.guestFallback;
 
 type Participant = RoomState["participants"][number];
 
@@ -32,7 +33,9 @@ export const RoomApp: FC<{
 		isSpectator: spectatorRef.current,
 	}));
 
-	const roomName = state?.roomName ? state.roomName : `部屋 ${roomId}`;
+	const roomName = state?.roomName
+		? state.roomName
+		: t.room.fallbackRoomName(roomId);
 	// 最初の state が届くまではリセットボタンを有効のままにしておく (従来の挙動と同じ)
 	const resetDisabled = state ? !state.revealed : false;
 
@@ -108,14 +111,14 @@ const RoomHeader: FC<{
 		<div>
 			<h1 id="room-name">{roomName}</h1>
 			<p class="room-code">
-				部屋コード: <code>{roomId}</code> <CopyLinkButton />
+				{t.room.roomCode} <code>{roomId}</code> <CopyLinkButton />
 			</p>
 		</div>
 		<div class="header-side">
 			<RoomQrCode />
 			<div class="me">
 				<label>
-					表示名
+					{t.room.displayName}
 					<input
 						id="my-name"
 						type="text"
@@ -133,7 +136,7 @@ const RoomHeader: FC<{
 							onSpectatorChange((e.target as HTMLInputElement).checked)
 						}
 					/>
-					観戦のみ
+					{t.room.spectatorOnly}
 				</label>
 			</div>
 		</div>
@@ -154,13 +157,13 @@ const CopyLinkButton: FC = () => {
 			timer.current = setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
 		} catch {
 			// クリップボードAPIが使えない環境ではユーザーにURLを手動で伝える
-			window.prompt("このURLを共有してください", location.href);
+			window.prompt(t.room.sharePrompt, location.href);
 		}
 	};
 
 	return (
 		<button id="copy-link" type="button" onClick={copy}>
-			{copied ? "コピーしました！" : "招待リンクをコピー"}
+			{copied ? t.room.copied : t.room.copyLink}
 		</button>
 	);
 };
@@ -199,7 +202,7 @@ const ParticipantCard: FC<{
 
 	return (
 		<div class={classes.join(" ")}>
-			<div class="name">{isMe ? `${p.name} (自分)` : p.name}</div>
+			<div class="name">{isMe ? t.room.me(p.name) : p.name}</div>
 			<div class="vote-slot">{slot}</div>
 		</div>
 	);
@@ -230,10 +233,10 @@ const Actions: FC<{
 }> = ({ resetDisabled, onReveal, onReset }) => (
 	<div class="actions">
 		<button id="reveal" type="button" onClick={onReveal}>
-			公開する
+			{t.room.reveal}
 		</button>
 		<button id="reset" type="button" disabled={resetDisabled} onClick={onReset}>
-			リセット
+			{t.room.reset}
 		</button>
 	</div>
 );

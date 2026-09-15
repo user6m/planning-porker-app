@@ -3,6 +3,7 @@
 
 import type { FC } from "hono/jsx/dom";
 import qrcode from "qrcode-generator";
+import { t } from "./locale";
 
 const MARGIN = 2;
 
@@ -39,12 +40,12 @@ export const RoomQrCode: FC = () => {
 				viewBox={`0 0 ${size} ${size}`}
 				shape-rendering="crispEdges"
 				role="img"
-				aria-label="部屋の招待URLのQRコード"
+				aria-label={t.room.qrAlt}
 			>
 				<rect width={size} height={size} fill="#ffffff" />
 				<path stroke="#000000" d={buildQrPath(qr)} />
 			</svg>
-			<p class="qr-widget-caption">スキャンして参加</p>
+			<p class="qr-widget-caption">{t.room.qrCaption}</p>
 		</div>
 	);
 };
