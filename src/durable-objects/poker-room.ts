@@ -14,11 +14,11 @@ interface StoredRoom {
 	participants: Record<string, Participant>;
 }
 
-const EMPTY_ROOM: StoredRoom = {
-	roomName: "",
-	revealed: false,
-	participants: {},
-};
+// 毎回新しいオブジェクトを返すこと。定数を共有すると、同じ isolate に載った
+// 別の部屋の DO どうしが同じオブジェクトを書き換え合い、部屋名や参加者が混ざる。
+function emptyRoom(): StoredRoom {
+	return { roomName: "", revealed: false, participants: {} };
+}
 
 /**
  * 1つのプランニングポーカーの「セッション（部屋）」を表す Durable Object。
@@ -32,7 +32,7 @@ const EMPTY_ROOM: StoredRoom = {
  * 詳しい解説は docs/SESSION.md を参照。
  */
 export class PokerRoom extends DurableObject<Bindings> {
-	private room: StoredRoom = EMPTY_ROOM;
+	private room: StoredRoom = emptyRoom();
 	private readonly ready: Promise<void>;
 
 	constructor(ctx: DurableObjectState, env: Bindings) {
