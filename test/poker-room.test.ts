@@ -54,6 +54,20 @@ describe("PokerRoom", () => {
 		expect(body.roomName).toBe("スプリント1");
 	});
 
+	it("keeps rooms independent even when they share an isolate", async () => {
+		// 初期状態をモジュールスコープのオブジェクトで共有していると、
+		// 先に作った部屋の名前や参加者が、後から作った別の部屋に混ざってしまう
+		await initRoom("room-isolation-a", "部屋A");
+		const stubB = await initRoom("room-isolation-b", "部屋B");
+
+		const res = await stubB.fetch("https://poker-room.internal/init", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({}),
+		});
+		expect((await res.json<{ roomName: string }>()).roomName).toBe("部屋B");
+	});
+
 	it("broadcasts state when a participant joins and votes", async () => {
 		const stub = await initRoom("room-vote", "見積もり会");
 		const alice = await connect(stub, "alice", "Alice");
