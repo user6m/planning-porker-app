@@ -45,6 +45,37 @@ describe("session cookie", () => {
 		expect(body.name).toMatch(/^Guest\d{4}$/);
 	});
 
+	it("renames an undecided guest in the language of the request", async () => {
+		const app = makeApp();
+		const first = await app.request("/whoami", {}, testEnv);
+		const cookie = first.headers.get("set-cookie")?.split(";")[0] ?? "";
+		const firstBody = await first.json<{ name: string }>();
+
+		const second = await app.request(
+			"/whoami",
+			{ headers: { cookie, "accept-language": "en-US,en;q=0.9" } },
+			testEnv,
+		);
+		const secondBody = await second.json<{ name: string }>();
+		// 番号は引き継いだまま、ゲスト名だけが英語になる
+		expect(secondBody.name).toBe(firstBody.name.replace("ゲスト", "Guest"));
+		expect(second.headers.get("set-cookie")).toMatch(/pp_session=/);
+	});
+
+	it("keeps a name the user chose when the language changes", async () => {
+		const app = makeApp();
+		const renamed = await app.request("/rename", { method: "POST" }, testEnv);
+		const cookie = renamed.headers.getSetCookie().at(-1)?.split(";")[0] ?? "";
+
+		const res = await app.request(
+			"/whoami",
+			{ headers: { cookie, "accept-language": "en-US,en;q=0.9" } },
+			testEnv,
+		);
+		const body = await res.json<{ name: string }>();
+		expect(body.name).toBe("リネーム後");
+	});
+
 	it("reuses the same identity across requests that send the cookie back", async () => {
 		const app = makeApp();
 		const first = await app.request("/whoami", {}, testEnv);
