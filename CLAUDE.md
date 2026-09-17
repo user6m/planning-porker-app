@@ -62,10 +62,16 @@ SESSION_SECRET=dev-only-secret-change-me
 - `MICRO`: 同じ年月内で何回目のリリースか（0始まり）。月が変わったら0にリセットされる
 
 `deploy` ジョブはmainへのpushでは自動実行されない。複数PRをマージしてからまとめてリリースできるよう、
-GitHubリポジトリの Actions タブから `CI` ワークフローを手動実行 (`workflow_dispatch`、対象ブランチは通常`main`) した
+GitHubリポジトリの Actions タブから `Release` ワークフローを手動実行 (`workflow_dispatch`、対象ブランチは通常`main`) した
 ときだけデプロイが走る。
 
-CI (`.github/workflows/ci.yml`) の `deploy` ジョブが、本番デプロイに成功した直後に自動で
+CI (`.github/workflows/ci.yml`) はtypecheck/lint/build/testのみを行い、PR作成時やmainへのpush時に実行される
+（実体は `.github/workflows/test.yml` の再利用ワークフローで、後述の `Release` ワークフローの `deploy` ジョブ前チェックとも共有している）。
+デプロイとリリースにまつわるジョブは別ワークフロー `Release` (`.github/workflows/release.yml`) に分離してあり、
+`workflow_dispatch`（`deploy` ジョブ）と、リリースPRがマージされた時の `pull_request: closed`（`release-tag` ジョブ）でのみ動く
+（通常のPR作成・更新時にはこのワークフローは起動しないため、Checks一覧にも出てこない）。
+
+`Release` ワークフローの `deploy` ジョブが、本番デプロイに成功した直後に自動で
 
 1. `scripts/bump-calver.mjs`（`pnpm version:bump`）で既存の `v<year>.<month>.*` タグから次のバージョンを算出し `package.json` に書き込む
 2. `package.json` に差分がある場合、`chore/release-vX.Y.Z` ブランチを作って `chore: release vX.Y.Z` コミットをpushし、`chore: release vX.Y.Z` PRを作成した上でGitHub Nativeのauto-merge（squash）を予約する（前回リリースと同じバージョンで差分が無い場合はコミット・PR作成をスキップし3.へ）

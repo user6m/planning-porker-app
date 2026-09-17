@@ -1,0 +1,55 @@
+name: Test (reusable)
+
+# Typecheck/Lint/Build/Test の実体。ci.yml (PR/main push) と release.yml
+# (workflow_dispatchでのデプロイ前チェック) の両方から呼び出す再利用ワークフロー。
+# 単体では実行されない (on: workflow_call のみ)。
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Typecheck / Lint / Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # SESSION_SECRET はローカル開発と同じダミー値。
+      # `wrangler types` がEnvの型を生成する際と、vitest-pool-workers が
+      # テスト実行時にDurable Object/Workers環境へ secret を注入する際に
+      # .dev.vars を参照するため、CIでも同じ形式で用意する。
+      - name: Create .dev.vars for typegen/test
+        run: echo "SESSION_SECRET=dev-only-secret-change-me" > .dev.vars
+
+      - name: Generate Cloudflare Workers types
+        run: pnpm cf-typegen
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      # ブラウザ側バンドル (src/client → dist/) が壊れていないことを PR ごとに確認する。
+      # vitest 自体は dist/ が無くても動く (vitest-pool-workers は assets ディレクトリの存在を検証せず、
+      # Miniflare は空の一時ディレクトリで起動する) が、Vite 設定や TSX の変換エラーもここで検出する。
+      - name: Build client bundle
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
