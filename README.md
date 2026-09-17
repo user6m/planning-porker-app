@@ -102,14 +102,15 @@ pnpm exec wrangler secret put SESSION_SECRET
 
 ## CI/CD
 
-GitHub Actions（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）で以下を自動化しています。
+GitHub Actionsで以下を自動化しています。ワークフローはCIとリリース関連で分けており、通常のPR作成・更新では
+リリース関連のジョブはChecks一覧に出てきません。
 
-- **CI**（`main`へのpush / 全PR）: `pnpm typecheck` / `pnpm lint` / `pnpm build` / `pnpm test` を実行
-- **CD**（Actionsタブから手動で "Run workflow" を実行、CI成功後）: `pnpm build` でブラウザ側バンドルを生成し、`wrangler deploy --minify` で本番デプロイ
+- **CI**（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)。`main`へのpush / 全PR）: `pnpm typecheck` / `pnpm lint` / `pnpm build` / `pnpm test` を実行（実体は [`.github/workflows/test.yml`](.github/workflows/test.yml) の再利用ワークフロー）
+- **CD**（[`.github/workflows/release.yml`](.github/workflows/release.yml)。Actionsタブから手動で "Run workflow" を実行）: 上記CIと同じチェックを再度実行した上で、`pnpm build` でブラウザ側バンドルを生成し、`wrangler deploy --minify` で本番デプロイ
 
 デプロイは`main`へのpushでは自動実行されません。複数のPRをマージしてからまとめてリリースできるよう、
-`.github/workflows/ci.yml` を選び、対象ブランチ（通常は`main`）を指定して手動で実行してください
-（GitHubリポジトリの Actions タブ → CI → Run workflow）。
+`.github/workflows/release.yml` を選び、対象ブランチ（通常は`main`）を指定して手動で実行してください
+（GitHubリポジトリの Actions タブ → Release → Run workflow）。
 
 デプロイジョブを動かすには、リポジトリに以下のSecretsを設定してください（Settings → Environments →
 `production`、またはSettings → Secrets and variables → Actions）。
