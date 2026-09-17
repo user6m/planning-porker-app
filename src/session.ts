@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { getSignedCookie, setSignedCookie } from "hono/cookie";
 import type { Bindings } from "./bindings";
-import { type Locale, messagesFor } from "./i18n";
+import { LOCALES, type Locale, messagesFor } from "./i18n";
 
 /**
  * 「ユーザーセッション」= このブラウザが誰なのかを覚えておく仕組み。
@@ -23,9 +23,48 @@ function generateGuestName(locale: Locale): string {
 }
 
 /**
+ * 自動生成されたゲスト名（= ユーザーがまだ表示名を決めていない状態）なら、その番号を返す。
+ * 自分で決めた表示名なら null。
+ *
+ * ユーザーがたまたまゲスト名と完全に同じ文字列を入力していた場合も自動生成とみなすが、
+ * 作り直しても番号は変わらない（「ゲスト1234」↔「Guest1234」）ので実害は無いものとして許容する。
+ */
+function parsedGuestNumber(name: string): number | null {
+	const digits = /\d+$/.exec(name)?.[0];
+	if (!digits) return null;
+	const n = Number(digits);
+	return LOCALES.some((locale) => messagesFor(locale).guestName(n) === name)
+		? n
+		: null;
+}
+
+/**
+ * 表示名が自動生成のゲスト名のままなら、いま選ばれている表示言語のゲスト名に作り直してCookieに書き戻す。
+ *
+ * セッションCookieは表示言語Cookieより先に、しかも言語を選ぶ前に発行されることがあるため、
+ * これが無いと英語に切り替えても「ゲスト1234」のままになる。番号は引き継ぐので同じ人だと分かる。
+ */
+async function localizeGuestName(
+	c: Context<{ Bindings: Bindings }>,
+	session: UserSession,
+	locale: Locale,
+): Promise<UserSession> {
+	const n = parsedGuestNumber(session.name);
+	if (n === null) return session;
+
+	const name = messagesFor(locale).guestName(n);
+	if (name === session.name) return session;
+
+	const localized = { ...session, name };
+	await persistSession(c, localized);
+	return localized;
+}
+
+/**
  * Cookie から署名済みセッションを読み取る。
  * 署名が無い/不正/未設定の場合は新しいセッションを発行してCookieにセットする。
- * 新規発行時の既定の表示名は表示言語 (locale) に合わせる。
+ * 既定の表示名（自動生成のゲスト名）は表示言語 (locale) に合わせる。
+ * 表示名を自分で決めていないユーザーは、言語を切り替えたときにゲスト名も作り直される。
  */
 export async function getOrCreateSession(
 	c: Context<{ Bindings: Bindings }>,
@@ -40,7 +79,11 @@ export async function getOrCreateSession(
 				typeof parsed.userId === "string" &&
 				typeof parsed.name === "string"
 			) {
-				return { userId: parsed.userId, name: parsed.name };
+				return await localizeGuestName(
+					c,
+					{ userId: parsed.userId, name: parsed.name },
+					locale,
+				);
 			}
 		} catch {
 			// 壊れた/改ざんされたCookieは無視して新規発行する
