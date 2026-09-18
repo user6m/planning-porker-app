@@ -39,6 +39,7 @@ export interface Messages {
 		hostNameLabel: string;
 		createButton: string;
 		joinHeading: string;
+		joinQrHint: string;
 		roomCodeLabel: string;
 		roomCodePlaceholder: string;
 		joinButton: string;
@@ -86,6 +87,8 @@ const ja: Messages = {
 		hostNameLabel: "あなたの表示名",
 		createButton: "部屋を作成",
 		joinHeading: "部屋に参加する",
+		joinQrHint:
+			"ホストに表示されたQRコードをスキャンして参加することもできます。",
 		roomCodeLabel: "部屋コード",
 		roomCodePlaceholder: "例: AB12CD34",
 		joinButton: "参加する",
@@ -133,6 +136,7 @@ const en: Messages = {
 		hostNameLabel: "Your display name",
 		createButton: "Create room",
 		joinHeading: "Join a room",
+		joinQrHint: "You can also scan the QR code shown to the host to join.",
 		roomCodeLabel: "Room code",
 		roomCodePlaceholder: "e.g. AB12CD34",
 		joinButton: "Join",
