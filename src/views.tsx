@@ -118,6 +118,7 @@ const HomePage: FC<{
 			</section>
 			<section class="card">
 				<h2>{t.home.joinHeading}</h2>
+				<p class="hint">{t.home.joinQrHint}</p>
 				<form method="get" action="/rooms/join">
 					<label>
 						{t.home.roomCodeLabel}
