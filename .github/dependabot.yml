@@ -14,6 +14,11 @@ updates:
       dependencies:
         patterns:
           - "*"
+    ignore:
+      # vitest 5 は @cloudflare/vitest-pool-workers（peer は vitest ^4.1.0）がまだ対応しておらず、
+      # 上げるとテスト用 Worker の起動に失敗する。pool-workers が対応したらこの ignore を外す。
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
