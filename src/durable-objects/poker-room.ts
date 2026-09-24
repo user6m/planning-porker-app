@@ -14,6 +14,9 @@ interface StoredRoom {
 	participants: Record<string, Participant>;
 }
 
+/** 最後に更新されてからこの期間が過ぎた部屋は削除する (トップページの「最近開いた部屋」の14日より長くとる) */
+export const ROOM_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 // 毎回新しいオブジェクトを返すこと。定数を共有すると、同じ isolate に載った
 // 別の部屋の DO どうしが同じオブジェクトを書き換え合い、部屋名や参加者が混ざる。
 function emptyRoom(): StoredRoom {
@@ -28,6 +31,7 @@ function emptyRoom(): StoredRoom {
  *   アイドル時にDOがハイバネートされても、再開時に状態を失わない。
  * - WebSocket Hibernation API（acceptWebSocket / webSocketMessage / webSocketClose）を使うことで、
  *   誰も通信していない間はDO自体を眠らせ、課金・リソースを節約できる。
+ * - 更新のたびに alarm を ROOM_TTL_MS 後へ延ばし、使われなくなった部屋はストレージごと削除する。
  *
  * 詳しい解説は docs/SESSION.md を参照。
  */
@@ -177,8 +181,20 @@ export class PokerRoom extends DurableObject<Bindings> {
 		this.broadcastState();
 	}
 
+	async alarm(): Promise<void> {
+		await this.ready;
+		// 接続したまま期限を迎えた (ずっと画面を開きっぱなし) 部屋は消さずに延長する
+		if (this.ctx.getWebSockets().length > 0) {
+			await this.ctx.storage.setAlarm(Date.now() + ROOM_TTL_MS);
+			return;
+		}
+		await this.ctx.storage.deleteAll();
+		this.room = emptyRoom();
+	}
+
 	private async persist(): Promise<void> {
 		await this.ctx.storage.put("room", this.room);
+		await this.ctx.storage.setAlarm(Date.now() + ROOM_TTL_MS);
 	}
 
 	private toPublicState(): RoomState {
