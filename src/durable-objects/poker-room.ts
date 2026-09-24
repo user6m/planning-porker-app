@@ -3,6 +3,7 @@ import type { Bindings } from "../bindings";
 import {
 	CARD_DECK,
 	type ClientMessage,
+	MAX_TIMER_SEC,
 	type Participant,
 	type RoomState,
 	type ServerMessage,
@@ -12,6 +13,8 @@ interface StoredRoom {
 	roomName: string;
 	revealed: boolean;
 	participants: Record<string, Participant>;
+	/** タイマー導入前に保存された部屋には無いので、読むときは `?? null` で扱う */
+	timer?: { durationMs: number; endsAt: number } | null;
 }
 
 /** 最後に更新されてからこの期間が過ぎた部屋は削除する (トップページの「最近開いた部屋」の14日より長くとる) */
@@ -20,7 +23,7 @@ export const ROOM_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 // 毎回新しいオブジェクトを返すこと。定数を共有すると、同じ isolate に載った
 // 別の部屋の DO どうしが同じオブジェクトを書き換え合い、部屋名や参加者が混ざる。
 function emptyRoom(): StoredRoom {
-	return { roomName: "", revealed: false, participants: {} };
+	return { roomName: "", revealed: false, participants: {}, timer: null };
 }
 
 /**
@@ -138,15 +141,35 @@ export class PokerRoom extends DurableObject<Bindings> {
 			}
 			case "reveal": {
 				this.room.revealed = true;
+				this.room.timer = null;
 				break;
 			}
 			case "reset": {
 				this.room.revealed = false;
+				this.room.timer = null;
 				for (const p of Object.values(this.room.participants)) p.vote = null;
 				break;
 			}
 			case "rename": {
 				participant.name = message.name.trim().slice(0, 40) || participant.name;
+				break;
+			}
+			case "startTimer": {
+				const { durationSec } = message;
+				if (
+					!Number.isInteger(durationSec) ||
+					durationSec <= 0 ||
+					durationSec > MAX_TIMER_SEC
+				) {
+					this.send(ws, { type: "error", code: "invalid_timer" });
+					return;
+				}
+				const durationMs = durationSec * 1000;
+				this.room.timer = { durationMs, endsAt: Date.now() + durationMs };
+				break;
+			}
+			case "stopTimer": {
+				this.room.timer = null;
 				break;
 			}
 			default:
@@ -198,6 +221,7 @@ export class PokerRoom extends DurableObject<Bindings> {
 	}
 
 	private toPublicState(): RoomState {
+		const timer = this.room.timer ?? null;
 		return {
 			roomId: this.ctx.id.toString(),
 			roomName: this.room.roomName,
@@ -209,6 +233,10 @@ export class PokerRoom extends DurableObject<Bindings> {
 				hasVoted: p.vote !== null,
 				vote: this.room.revealed ? p.vote : null,
 			})),
+			timer: timer && {
+				durationMs: timer.durationMs,
+				remainingMs: Math.max(0, timer.endsAt - Date.now()),
+			},
 		};
 	}
 

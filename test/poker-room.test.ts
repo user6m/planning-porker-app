@@ -149,6 +149,45 @@ describe("PokerRoom", () => {
 		expect(reset.state.participants[0]?.hasVoted).toBe(false);
 	});
 
+	it("shares a countdown timer and clears it on reveal", async () => {
+		const stub = await initRoom("room-timer", "タイマー");
+		const alice = await connect(stub, "alice", "Alice");
+		await nextMessage(alice);
+
+		type TimerState = {
+			state: { timer: { durationMs: number; remainingMs: number } | null };
+		};
+		let pending = nextMessage(alice);
+		alice.send(JSON.stringify({ type: "startTimer", durationSec: 60 }));
+		const started = (await pending) as TimerState;
+		expect(started.state.timer?.durationMs).toBe(60_000);
+		expect(started.state.timer?.remainingMs).toBeGreaterThan(59_000);
+		expect(started.state.timer?.remainingMs).toBeLessThanOrEqual(60_000);
+
+		pending = nextMessage(alice);
+		alice.send(JSON.stringify({ type: "reveal" }));
+		expect(((await pending) as TimerState).state.timer).toBeNull();
+
+		pending = nextMessage(alice);
+		alice.send(JSON.stringify({ type: "startTimer", durationSec: 30 }));
+		await pending;
+		pending = nextMessage(alice);
+		alice.send(JSON.stringify({ type: "stopTimer" }));
+		expect(((await pending) as TimerState).state.timer).toBeNull();
+	});
+
+	it("rejects invalid timer durations", async () => {
+		const stub = await initRoom("room-timer-invalid", "タイマー2");
+		const alice = await connect(stub, "alice", "Alice");
+		await nextMessage(alice);
+
+		for (const durationSec of [0, -1, 1.5, 60 * 60 + 1, "60"]) {
+			const pending = nextMessage(alice);
+			alice.send(JSON.stringify({ type: "startTimer", durationSec }));
+			expect(await pending).toEqual({ type: "error", code: "invalid_timer" });
+		}
+	});
+
 	it("rejects invalid card values", async () => {
 		const stub = await initRoom("room-invalid", "見積もり会3");
 		const alice = await connect(stub, "alice", "Alice");

@@ -57,6 +57,12 @@ export interface Messages {
 		me: (name: string) => string;
 		reveal: string;
 		reset: string;
+		timerLabel: string;
+		/** タイマーの長さの選択肢の表示 (例: 30秒, 2分) */
+		timerDuration: (sec: number) => string;
+		startTimer: string;
+		stopTimer: string;
+		timeUp: string;
 		qrAlt: string;
 		qrCaption: string;
 		connected: string;
@@ -110,6 +116,11 @@ const ja: Messages = {
 		me: (name) => `${name} (自分)`,
 		reveal: "公開する",
 		reset: "リセット",
+		timerLabel: "タイマー",
+		timerDuration: (sec) => (sec < 60 ? `${sec}秒` : `${sec / 60}分`),
+		startTimer: "開始",
+		stopTimer: "停止",
+		timeUp: "時間切れ",
 		qrAlt: "部屋の招待URLのQRコード",
 		qrCaption: "スキャンして参加",
 		connected: "接続中",
@@ -120,6 +131,7 @@ const ja: Messages = {
 		invalid_message: "メッセージの形式が不正です",
 		vote_after_reveal: "公開後は投票し直せません。リセットしてください",
 		invalid_card: "無効なカードです",
+		invalid_timer: "タイマーの長さが不正です",
 	},
 	guestName: (n) => `ゲスト${n}`,
 	guestFallback: "ゲスト",
@@ -162,6 +174,11 @@ const en: Messages = {
 		me: (name) => `${name} (you)`,
 		reveal: "Reveal",
 		reset: "Reset",
+		timerLabel: "Timer",
+		timerDuration: (sec) => (sec < 60 ? `${sec} sec` : `${sec / 60} min`),
+		startTimer: "Start",
+		stopTimer: "Stop",
+		timeUp: "Time's up",
 		qrAlt: "QR code for the room invite URL",
 		qrCaption: "Scan to join",
 		connected: "Connected",
@@ -172,6 +189,7 @@ const en: Messages = {
 		invalid_message: "Invalid message format",
 		vote_after_reveal: "Votes cannot be changed after reveal. Reset first.",
 		invalid_card: "Invalid card",
+		invalid_timer: "Invalid timer duration",
 	},
 	guestName: (n) => `Guest${n}`,
 	guestFallback: "Guest",

@@ -293,6 +293,46 @@ button.secondary {
 	opacity: 0.6;
 }
 
+.timer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.6rem;
+	margin-bottom: 1.25rem;
+}
+
+.timer label {
+	flex-direction: row;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.timer-label {
+	font-size: 0.9rem;
+	color: var(--muted);
+}
+
+.timer select {
+	font-size: 1rem;
+	padding: 0.5rem 0.6rem;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	background: var(--bg);
+	color: var(--fg);
+}
+
+/* 残り時間の桁が変わっても停止ボタンの位置が動かないよう、等幅数字と最小幅を指定する */
+.timer-display {
+	min-width: 5rem;
+	font-size: 1.4rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.timer-display.time-up {
+	color: var(--danger);
+}
+
 .cards {
 	display: flex;
 	flex-wrap: wrap;

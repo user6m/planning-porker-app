@@ -1,6 +1,11 @@
 import type { FC } from "hono/jsx/dom";
-import { useRef, useState } from "hono/jsx/dom";
-import { CARD_DECK, type CardValue, type RoomState } from "../types";
+import { useLayoutEffect, useMemo, useRef, useState } from "hono/jsx/dom";
+import {
+	CARD_DECK,
+	type CardValue,
+	type RoomState,
+	TIMER_PRESETS_SEC,
+} from "../types";
 import { t } from "./locale";
 import { RoomQrCode } from "./qr-code";
 import { useRoomSocket } from "./use-room-socket";
@@ -78,6 +83,11 @@ export const RoomApp: FC<{
 				userId={userId}
 			/>
 			<section class="controls">
+				<Timer
+					timer={state?.timer ?? null}
+					onStart={(durationSec) => send({ type: "startTimer", durationSec })}
+					onStop={() => send({ type: "stopTimer" })}
+				/>
 				<CardDeck selected={selectedVote} onVote={onVote} />
 				<Actions
 					resetDisabled={resetDisabled}
@@ -243,3 +253,93 @@ const Actions: FC<{
 		</button>
 	</div>
 );
+
+const TIMER_TICK_MS = 250;
+const DEFAULT_TIMER_SEC = 60;
+
+function formatRemaining(ms: number): string {
+	const totalSec = Math.ceil(ms / 1000);
+	const min = Math.floor(totalSec / 60);
+	const sec = totalSec % 60;
+	return `${min}:${String(sec).padStart(2, "0")}`;
+}
+
+/** 部屋で共有するカウントダウン。誰が開始/停止しても全員の画面に反映される */
+const Timer: FC<{
+	timer: RoomState["timer"];
+	onStart: (durationSec: number) => void;
+	onStop: () => void;
+}> = ({ timer, onStart, onStop }) => {
+	const durationRef = useRef<number>(DEFAULT_TIMER_SEC);
+	// state が届くたびに timer は新しいオブジェクトになるので、受信した時点を起点に終了時刻を取り直す
+	const endsAt = useMemo(
+		() => (timer ? Date.now() + timer.remainingMs : null),
+		[timer],
+	);
+	const [now, setNow] = useState(Date.now());
+
+	// useEffect はバックグラウンドタブで実行されず、戻ってくるまで表示が止まるので useLayoutEffect を使う
+	useLayoutEffect(() => {
+		setNow(Date.now());
+		if (endsAt === null) return;
+		const id = setInterval(() => {
+			const current = Date.now();
+			setNow(current);
+			if (current >= endsAt) clearInterval(id);
+		}, TIMER_TICK_MS);
+		return () => clearInterval(id);
+	}, [endsAt]);
+
+	if (endsAt === null) {
+		return (
+			<div class="timer" id="timer">
+				<label>
+					{t.room.timerLabel}
+					<select
+						id="timer-duration"
+						onChange={(e) => {
+							durationRef.current = Number(
+								(e.target as HTMLSelectElement).value,
+							);
+						}}
+					>
+						{TIMER_PRESETS_SEC.map((sec) => (
+							<option
+								key={sec}
+								value={String(sec)}
+								selected={sec === durationRef.current}
+							>
+								{t.room.timerDuration(sec)}
+							</option>
+						))}
+					</select>
+				</label>
+				<button
+					id="timer-start"
+					type="button"
+					class="secondary"
+					onClick={() => onStart(durationRef.current)}
+				>
+					{t.room.startTimer}
+				</button>
+			</div>
+		);
+	}
+
+	const remainingMs = Math.max(0, endsAt - now);
+	const timeUp = remainingMs === 0;
+	return (
+		<div class="timer" id="timer">
+			<span class="timer-label">{t.room.timerLabel}</span>
+			<output
+				id="timer-display"
+				class={timeUp ? "timer-display time-up" : "timer-display"}
+			>
+				{timeUp ? t.room.timeUp : formatRemaining(remainingMs)}
+			</output>
+			<button id="timer-stop" type="button" class="secondary" onClick={onStop}>
+				{t.room.stopTimer}
+			</button>
+		</div>
+	);
+};
