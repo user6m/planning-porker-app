@@ -46,6 +46,7 @@ export interface Messages {
 		missingFields: string;
 	};
 	room: {
+		backToTop: string;
 		pageTitle: (roomId: string) => string;
 		fallbackRoomName: (roomId: string) => string;
 		roomCode: string;
@@ -95,6 +96,7 @@ const ja: Messages = {
 		missingFields: "部屋の名前と表示名を入力してください",
 	},
 	room: {
+		backToTop: "← トップへ戻る",
 		pageTitle: (roomId) => `部屋 ${roomId} - プランニングポーカー`,
 		fallbackRoomName: (roomId) => `部屋 ${roomId}`,
 		roomCode: "部屋コード:",
@@ -143,6 +145,7 @@ const en: Messages = {
 		missingFields: "Enter a room name and your display name",
 	},
 	room: {
+		backToTop: "← Back to top",
 		pageTitle: (roomId) => `Room ${roomId} - Planning Poker`,
 		fallbackRoomName: (roomId) => `Room ${roomId}`,
 		roomCode: "Room code:",
