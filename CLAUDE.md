@@ -121,6 +121,7 @@ test/
 ```
 
 - 部屋の状態（参加者・投票）はDurable Objectの `ctx.storage` に永続化される。メモリ上にしか保持しないとハイバネート時に消える。
+- 部屋は最後の更新から30日（`ROOM_TTL_MS`）で alarm により `ctx.storage` ごと削除される。`persist()` のたびに alarm を延ばしているので、状態を書き戻す処理は必ず `persist()` を通す。
 - WebSocket通信はHibernation API（`acceptWebSocket` / `webSocketMessage` / `webSocketClose`）を使う。誰も通信していない間はDOをスリープさせる前提の実装なので、状態はメッセージ処理のたびに `ctx.storage` へ書き戻す必要がある。
 - ユーザー識別はCookie（`pp_session`）のみで、ログイン機能やDBは存在しない。
 - Durable Object は部屋ごとの状態をインスタンス変数に持つが、初期値にモジュールスコープのオブジェクトを

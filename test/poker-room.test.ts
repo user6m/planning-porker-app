@@ -1,6 +1,10 @@
-import { env, runInDurableObject } from "cloudflare:test";
+import {
+	env,
+	runDurableObjectAlarm,
+	runInDurableObject,
+} from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import type { PokerRoom } from "../src/durable-objects/poker-room";
+import { type PokerRoom, ROOM_TTL_MS } from "../src/durable-objects/poker-room";
 
 function getStub(name: string) {
 	const id = env.POKER_ROOM.idFromName(name);
@@ -177,5 +181,45 @@ describe("PokerRoom", () => {
 			const room = (instance as any).room;
 			expect(Object.keys(room.participants)).toEqual([]);
 		});
+	});
+
+	it("schedules deletion ROOM_TTL_MS after the last update", async () => {
+		const before = Date.now();
+		const stub = await initRoom("room-ttl", "スプリント3");
+		await runInDurableObject(stub, async (_instance, state) => {
+			const alarm = await state.storage.getAlarm();
+			expect(alarm).toBeGreaterThanOrEqual(before + ROOM_TTL_MS);
+			expect(alarm).toBeLessThanOrEqual(Date.now() + ROOM_TTL_MS);
+		});
+	});
+
+	it("deletes an idle room when the alarm fires", async () => {
+		const stub = await initRoom("room-expire", "スプリント4");
+		expect(await runDurableObjectAlarm(stub)).toBe(true);
+
+		const res = await stub.fetch("https://poker-room.internal/info");
+		expect(await res.json()).toEqual({ roomName: "" });
+		await runInDurableObject(stub, async (_instance, state) => {
+			expect(await state.storage.get("room")).toBeUndefined();
+			expect(await state.storage.getAlarm()).toBeNull();
+		});
+	});
+
+	it("keeps a room with connected participants and extends the alarm", async () => {
+		const stub = await initRoom("room-expire-active", "スプリント5");
+		const alice = await connect(stub, "alice", "Alice");
+		await nextMessage(alice);
+
+		const before = Date.now();
+		expect(await runDurableObjectAlarm(stub)).toBe(true);
+
+		const res = await stub.fetch("https://poker-room.internal/info");
+		expect(await res.json()).toEqual({ roomName: "スプリント5" });
+		await runInDurableObject(stub, async (_instance, state) => {
+			expect(await state.storage.getAlarm()).toBeGreaterThanOrEqual(
+				before + ROOM_TTL_MS,
+			);
+		});
+		alice.close();
 	});
 });

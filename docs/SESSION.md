@@ -54,6 +54,14 @@ await setSignedCookie(c, "pp_session", JSON.stringify({ userId, name }), secret,
 | `sameSite: "Lax"` | 他サイトからのクロスサイトリクエストで送信されないようにし、CSRFの一部を防ぐ |
 | `maxAge` | 有効期限。切れると次回アクセス時に新しいセッションが発行される |
 
+### 使われなくなった部屋の削除
+
+`ctx.storage` に書いた状態は、消さない限り残り続けます。そこで状態を書き戻す `persist()` のたびに
+`ctx.storage.setAlarm(Date.now() + 30日)` で alarm を先送りし、30日間更新が無かった部屋は
+`alarm()` の中で `ctx.storage.deleteAll()` して削除しています。alarm はDOがハイバネートしていても
+指定時刻に起こしてもらえるので、タイマーを動かし続ける必要はありません。
+期限の時点でまだ誰かが接続している場合は、削除せずにもう30日延長します。
+
 ### 試してみよう
 
 - `test/session.test.ts` は、Cookieの署名検証・改ざん検知・ロールバックの振る舞いをテストしています。
