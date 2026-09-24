@@ -109,6 +109,9 @@ const RoomHeader: FC<{
 }) => (
 	<header class="room-header">
 		<div>
+			<a id="back-to-top" class="back-link" href="/">
+				{t.room.backToTop}
+			</a>
 			<h1 id="room-name">{roomName}</h1>
 			<p class="room-code">
 				{t.room.roomCode} <code>{roomId}</code> <CopyLinkButton />

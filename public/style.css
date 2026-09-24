@@ -146,6 +146,19 @@ button.secondary {
 	margin-bottom: 1.5rem;
 }
 
+.back-link {
+	display: inline-block;
+	margin-bottom: 0.5rem;
+	color: var(--muted);
+	font-size: 0.9rem;
+	text-decoration: none;
+}
+
+.back-link:hover {
+	color: var(--accent);
+	text-decoration: underline;
+}
+
 .room-code code {
 	background: var(--card-bg);
 	border: 1px solid var(--border);
