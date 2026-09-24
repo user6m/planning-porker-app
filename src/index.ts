@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Bindings } from "./bindings";
 import { isLocale, messagesFor } from "./i18n";
 import { persistLocale, resolveLocale, safeReturnPath } from "./locale";
+import { getRecentRooms, rememberRoom } from "./recent-rooms";
 import { generateRoomName } from "./room-name";
 import { getOrCreateSession, persistSession } from "./session";
 import { renderHome, renderRoom } from "./views";
@@ -35,7 +36,9 @@ app.get("/lang/:locale", (c) => {
 app.get("/", async (c) => {
 	const locale = resolveLocale(c);
 	const session = await getOrCreateSession(c, locale);
-	return c.html(renderHome(locale, session, generateRoomName(locale)));
+	return c.html(
+		renderHome(locale, session, getRecentRooms(c), generateRoomName(locale)),
+	);
 });
 
 app.post("/rooms", async (c) => {
@@ -51,6 +54,7 @@ app.post("/rooms", async (c) => {
 			renderHome(
 				locale,
 				session,
+				getRecentRooms(c),
 				roomName || generateRoomName(locale),
 				messagesFor(locale).home.missingFields,
 			),
@@ -82,6 +86,12 @@ app.get("/rooms/:id", async (c) => {
 	const roomId = normalizeRoomId(c.req.param("id"));
 	const locale = resolveLocale(c);
 	const session = await getOrCreateSession(c, locale);
+
+	const stub = c.env.POKER_ROOM.get(c.env.POKER_ROOM.idFromName(roomId));
+	const info = await stub.fetch("https://poker-room.internal/info");
+	const { roomName } = await info.json<{ roomName: string }>();
+	rememberRoom(c, { id: roomId, name: roomName });
+
 	return c.html(renderRoom(locale, roomId, session));
 });
 

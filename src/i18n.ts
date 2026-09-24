@@ -44,6 +44,8 @@ export interface Messages {
 		roomCodePlaceholder: string;
 		joinButton: string;
 		missingFields: string;
+		recentHeading: string;
+		recentHint: (days: number) => string;
 	};
 	room: {
 		backToTop: string;
@@ -94,6 +96,8 @@ const ja: Messages = {
 		roomCodePlaceholder: "例: AB12CD34",
 		joinButton: "参加する",
 		missingFields: "部屋の名前と表示名を入力してください",
+		recentHeading: "最近開いた部屋",
+		recentHint: (days) => `最後に開いてから${days}日以内の部屋です。`,
 	},
 	room: {
 		backToTop: "← トップへ戻る",
@@ -143,6 +147,8 @@ const en: Messages = {
 		roomCodePlaceholder: "e.g. AB12CD34",
 		joinButton: "Join",
 		missingFields: "Enter a room name and your display name",
+		recentHeading: "Recent rooms",
+		recentHint: (days) => `Rooms you opened in the last ${days} days.`,
 	},
 	room: {
 		backToTop: "← Back to top",

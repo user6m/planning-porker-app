@@ -34,6 +34,9 @@ DBのトランザクションやポーリングなしに、投票の競合を防
 画面の表示言語は日本語と英語に対応しています。初回はブラウザの言語設定（`Accept-Language`）から自動で選ばれ、
 画面右上のボタンで切り替えられます。選んだ言語は Cookie (`pp_lang`) に保存されるので、次回以降もそのまま使えます。
 
+一度開いた部屋は、最後に開いてから14日間トップページの「最近開いた部屋」に表示されます（最大5件、Cookie `pp_recent` に保存）。
+部屋に有効期限は無いので、全員が抜けたあとでも同じ部屋を再利用できます。
+
 ## セットアップ
 
 ```bash
@@ -149,6 +152,7 @@ src/
   index.ts                    # Honoアプリのエントリポイント・ルーティング
   session.ts                  # ユーザーセッション(署名付きCookie)
   locale.ts                   # 表示言語の判定・Cookieへの保存(Worker側)
+  recent-rooms.ts             # 最近開いた部屋の履歴(Cookie)
   room-name.ts                # 部屋名の既定値の自動生成
   bindings.ts                 # Cloudflare Bindingsの型定義
   types.ts                    # 部屋の状態・WebSocketメッセージの型（ブラウザ側とも共有）

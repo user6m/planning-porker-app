@@ -1,10 +1,17 @@
+import { env } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import pkg from "../package.json";
 import type { Bindings } from "../src/bindings";
 import app from "../src/index";
 
-// ここで叩くルートは Durable Object に到達しないので、Cookie 署名用のダミー env で十分
-const testEnv = { SESSION_SECRET: "test-secret" } as unknown as Bindings;
+// GET /rooms/:id は部屋名を取りに Durable Object へ問い合わせるので、実際の Bindings を渡す
+const testEnv = { ...env, SESSION_SECRET: "test-secret" } as Bindings;
+
+function recentCookie(
+	rooms: { id: string; name: string; visitedAt: number }[],
+) {
+	return `pp_recent=${encodeURIComponent(JSON.stringify(rooms))}`;
+}
 
 describe("GET /", () => {
 	it("トップページを hono/jsx でレンダリングする", async () => {
@@ -178,5 +185,84 @@ describe("表示言語", () => {
 			testEnv,
 		);
 		expect(openRedirect.headers.get("location")).toBe("/");
+	});
+});
+
+describe("最近開いた部屋", () => {
+	const DAY_MS = 24 * 60 * 60 * 1000;
+
+	it("部屋を開くと部屋名つきで Cookie に記録する", async () => {
+		const created = await app.request(
+			"/rooms",
+			{
+				method: "POST",
+				body: new URLSearchParams({ roomName: "スプリント12", hostName: "x" }),
+			},
+			testEnv,
+		);
+		const location = created.headers.get("location") ?? "";
+		const roomId = location.split("/").pop();
+
+		const res = await app.request(location, {}, testEnv);
+		const cookie = res.headers.get("set-cookie") ?? "";
+		const value = /pp_recent=([^;]+)/.exec(cookie)?.[1] ?? "";
+		const rooms = JSON.parse(decodeURIComponent(value));
+		expect(rooms).toHaveLength(1);
+		expect(rooms[0]).toMatchObject({ id: roomId, name: "スプリント12" });
+	});
+
+	it("同じ部屋は先頭にまとめ、既存の履歴を後ろに残す", async () => {
+		const now = Date.now();
+		const res = await app.request(
+			"/rooms/bbbb2222",
+			{
+				headers: {
+					cookie: recentCookie([
+						{ id: "AAAA1111", name: "A", visitedAt: now - 1000 },
+						{ id: "BBBB2222", name: "", visitedAt: now - 2000 },
+					]),
+				},
+			},
+			testEnv,
+		);
+		const value = /pp_recent=([^;]+)/.exec(
+			res.headers.get("set-cookie") ?? "",
+		)?.[1];
+		const rooms = JSON.parse(decodeURIComponent(value ?? ""));
+		expect(rooms.map((r: { id: string }) => r.id)).toEqual([
+			"BBBB2222",
+			"AAAA1111",
+		]);
+	});
+
+	it("トップページに期限内の部屋だけをリンクで表示する", async () => {
+		const now = Date.now();
+		const res = await app.request(
+			"/",
+			{
+				headers: {
+					cookie: recentCookie([
+						{ id: "AAAA1111", name: "<b>見積もり</b>", visitedAt: now },
+						{ id: "BBBB2222", name: "", visitedAt: now - DAY_MS },
+						{ id: "CCCC3333", name: "古い部屋", visitedAt: now - 15 * DAY_MS },
+					]),
+				},
+			},
+			testEnv,
+		);
+		const body = await res.text();
+		expect(body).toContain("<h2>最近開いた部屋</h2>");
+		expect(body).toContain('href="/rooms/AAAA1111"');
+		expect(body).toContain("&lt;b&gt;見積もり&lt;/b&gt;");
+		// 名前の無い部屋はルーム画面と同じ既定の名前で出す
+		expect(body).toContain("部屋 BBBB2222");
+		expect(body).not.toContain("CCCC3333");
+	});
+
+	it("履歴が無い/壊れているときはセクションを出さない", async () => {
+		for (const cookie of ["", "pp_recent=not-json", "pp_recent=%7B%7D"]) {
+			const res = await app.request("/", { headers: { cookie } }, testEnv);
+			expect(await res.text()).not.toContain("最近開いた部屋");
+		}
 	});
 });

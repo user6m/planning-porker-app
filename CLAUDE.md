@@ -94,6 +94,7 @@ src/
   index.ts                    # Honoアプリのエントリポイント・ルーティング
   session.ts                  # 署名付きCookieによるユーザーセッション（DBなし）
   locale.ts                   # リクエストからの表示言語判定・Cookieへの保存（Worker側）
+  recent-rooms.ts             # 最近開いた部屋の履歴（pp_recent Cookie、トップページに表示）
   bindings.ts                 # Cloudflare Bindingsの型定義
   types.ts                    # 部屋の状態・WebSocketメッセージの型（ブラウザ側とも共有）
   i18n.ts                     # 日本語/英語の文言定義（ブラウザ側とも共有。DOM/Workers に依存しないこと）

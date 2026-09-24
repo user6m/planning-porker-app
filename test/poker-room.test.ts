@@ -54,6 +54,17 @@ describe("PokerRoom", () => {
 		expect(body.roomName).toBe("スプリント1");
 	});
 
+	it("returns the room name from GET /info without changing it", async () => {
+		const stub = await initRoom("room-info", "スプリント2");
+		const res = await stub.fetch("https://poker-room.internal/info");
+		expect(await res.json()).toEqual({ roomName: "スプリント2" });
+
+		const empty = await getStub("room-info-empty").fetch(
+			"https://poker-room.internal/info",
+		);
+		expect(await empty.json()).toEqual({ roomName: "" });
+	});
+
 	it("keeps rooms independent even when they share an isolate", async () => {
 		// 初期状態をモジュールスコープのオブジェクトで共有していると、
 		// 先に作った部屋の名前や参加者が、後から作った別の部屋に混ざってしまう
