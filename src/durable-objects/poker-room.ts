@@ -59,6 +59,10 @@ export class PokerRoom extends DurableObject<Bindings> {
 			return Response.json({ roomName: this.room.roomName });
 		}
 
+		if (request.method === "GET" && url.pathname.endsWith("/info")) {
+			return Response.json({ roomName: this.room.roomName });
+		}
+
 		if (request.headers.get("Upgrade") !== "websocket") {
 			return new Response("Expected a WebSocket upgrade request", {
 				status: 426,

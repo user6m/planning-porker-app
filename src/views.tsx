@@ -9,6 +9,7 @@ import { html } from "hono/html";
 import type { Child, FC, PropsWithChildren } from "hono/jsx";
 import pkg from "../package.json";
 import { type Locale, messagesFor, otherLocale } from "./i18n";
+import { RECENT_ROOM_DAYS, type RecentRoom } from "./recent-rooms";
 import type { UserSession } from "./session";
 
 // FOUC 防止: CSS が読み込まれる前に保存済みテーマを適用する (theme.js より前に同期実行される)。
@@ -77,18 +78,47 @@ function page(locale: Locale, path: string, title: string, body: Child) {
 	)}`;
 }
 
+const RecentRooms: FC<{ locale: Locale; rooms: RecentRoom[] }> = ({
+	locale,
+	rooms,
+}) => {
+	const t = messagesFor(locale);
+	return (
+		<section class="card">
+			<h2>{t.home.recentHeading}</h2>
+			<p class="hint">{t.home.recentHint(RECENT_ROOM_DAYS)}</p>
+			<ul class="recent-rooms">
+				{rooms.map((room) => (
+					<li>
+						<a href={`/rooms/${encodeURIComponent(room.id)}`}>
+							<span class="recent-room-name">
+								{room.name || t.room.fallbackRoomName(room.id)}
+							</span>
+							<code>{room.id}</code>
+						</a>
+					</li>
+				))}
+			</ul>
+		</section>
+	);
+};
+
 const HomePage: FC<{
 	locale: Locale;
 	session: UserSession;
+	recentRooms: RecentRoom[];
 	defaultRoomName: string;
 	error?: string;
-}> = ({ locale, session, defaultRoomName, error }) => {
+}> = ({ locale, session, recentRooms, defaultRoomName, error }) => {
 	const t = messagesFor(locale);
 	return (
 		<main class="page page-home">
 			<h1>🃏 {t.appName}</h1>
 			<p class="lead">{t.tagline}</p>
 			{error ? <p class="error">{error}</p> : null}
+			{recentRooms.length > 0 ? (
+				<RecentRooms locale={locale} rooms={recentRooms} />
+			) : null}
 			<section class="card">
 				<h2>{t.home.createHeading}</h2>
 				<form method="post" action="/rooms">
@@ -158,6 +188,7 @@ const RoomPage: FC<{ roomId: string; session: UserSession }> = ({
 export function renderHome(
 	locale: Locale,
 	session: UserSession,
+	recentRooms: RecentRoom[],
 	defaultRoomName: string,
 	error?: string,
 ) {
@@ -168,6 +199,7 @@ export function renderHome(
 		<HomePage
 			locale={locale}
 			session={session}
+			recentRooms={recentRooms}
 			defaultRoomName={defaultRoomName}
 			error={error}
 		/>,
