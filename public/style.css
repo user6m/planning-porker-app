@@ -210,12 +210,12 @@ button.secondary {
 	flex-wrap: wrap;
 	align-items: flex-start;
 	gap: 1rem;
+	/* ページ右上に固定表示される corner-controls (top: 1rem, 高さ 2.6rem) と重ならないよう間隔を空ける */
+	margin-top: 2.5rem;
 }
 
 .qr-widget {
 	flex-shrink: 0;
-	/* ページ右上に固定表示される corner-controls (top: 1rem, 高さ 2.6rem) と重ならないよう間隔を空ける */
-	margin-top: 2.5rem;
 	background: #ffffff;
 	border: 1px solid var(--border);
 	border-radius: 10px;
@@ -348,37 +348,111 @@ button.secondary {
 	gap: 0.5rem;
 }
 
-.theme-toggle {
-	width: 2.6rem;
+.corner-menu {
+	position: relative;
+}
+
+.corner-menu > summary {
+	list-style: none;
+}
+
+.corner-menu > summary::-webkit-details-marker {
+	display: none;
+}
+
+/* ボタンには今の設定を出す (切り替え先ではなく) */
+.corner-menu-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.35rem;
 	height: 2.6rem;
-	padding: 0;
-	font-size: 1.2rem;
 	line-height: 1;
-	border-radius: 50%;
+	cursor: pointer;
 	background: var(--card-bg);
 	color: var(--fg);
 	border: 1px solid var(--border);
 }
 
-.lang-toggle {
-	display: inline-flex;
-	align-items: center;
-	height: 2.6rem;
+.corner-menu-button:hover,
+.corner-menu[open] > .corner-menu-button {
+	filter: none;
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+.theme-menu-button {
+	width: 2.6rem;
+	padding: 0;
+	font-size: 1.2rem;
+	border-radius: 50%;
+}
+
+.lang-menu-button {
 	padding: 0 0.85rem;
 	font-size: 0.8rem;
 	font-weight: 600;
-	line-height: 1;
 	white-space: nowrap;
 	border-radius: 1.3rem;
-	background: var(--card-bg);
-	color: var(--fg);
-	border: 1px solid var(--border);
-	text-decoration: none;
 }
 
-.lang-toggle:hover {
-	border-color: var(--accent);
+.lang-menu-button::after {
+	content: "▾";
+	font-size: 0.7rem;
+}
+
+/* 開いている間だけ本文の上に重なるドロップダウン。corner-controls が右上固定なので、
+   右端をボタンに揃えて下に出せば画面の外にははみ出さない */
+.corner-menu-list {
+	position: absolute;
+	top: calc(100% + 0.35rem);
+	right: 0;
+	min-width: 10rem;
+	max-width: calc(100vw - 2rem);
+	margin: 0;
+	padding: 0.3rem;
+	list-style: none;
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+}
+
+.corner-menu-list a,
+.corner-menu-list button {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	width: 100%;
+	padding: 0.5rem 0.6rem;
+	font-size: 0.85rem;
+	font-weight: 400;
+	text-align: left;
+	text-decoration: none;
+	border: none;
+	border-radius: 6px;
+	background: none;
+	color: var(--fg);
+}
+
+/* 選択中の項目に ✓ を付ける。他の項目も同じ幅を空けて文字の位置を揃える */
+.corner-menu-list a::before,
+.corner-menu-list button::before {
+	content: "";
+	flex-shrink: 0;
+	width: 1em;
 	color: var(--accent);
+}
+
+.corner-menu-list [aria-current="true"]::before,
+.corner-menu-list [aria-pressed="true"]::before {
+	content: "✓";
+}
+
+.corner-menu-list a:hover,
+.corner-menu-list button:hover {
+	filter: none;
+	background: var(--bg);
 }
 
 /* 画面が狭いと右上の corner-controls が見出しに重なるので、本文をその下から始める */
@@ -387,7 +461,7 @@ button.secondary {
 		padding-top: 4.2rem;
 	}
 
-	.qr-widget {
+	.header-side {
 		margin-top: 0;
 	}
 }

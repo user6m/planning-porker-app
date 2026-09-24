@@ -8,29 +8,43 @@
 import { html } from "hono/html";
 import type { Child, FC, PropsWithChildren } from "hono/jsx";
 import pkg from "../package.json";
-import { type Locale, messagesFor, otherLocale } from "./i18n";
+import { LOCALES, type Locale, messagesFor } from "./i18n";
 import { RECENT_ROOM_DAYS, type RecentRoom } from "./recent-rooms";
 import type { UserSession } from "./session";
 
-// FOUC 防止: CSS が読み込まれる前に保存済みテーマを適用する (theme.js より前に同期実行される)。
+// FOUC 防止: CSS が読み込まれる前に保存済みテーマを適用する (corner-controls.js より前に同期実行される)。
 // html`` に ${} を使っていないので中身はエスケープされずそのまま出力される。
 const THEME_INIT_SCRIPT = html`<script>(() => { const theme = localStorage.getItem("pp-theme"); if (theme === "dark" || theme === "light") { document.documentElement.dataset.theme = theme; } })();</script>`;
 
 // 言語の切り替えはサーバー側の描画結果ごと変わるため、Cookie に記録して描画し直す
-// (/lang/:locale へのリンク → 元のページへリダイレクト)。
-const LangToggle: FC<{ locale: Locale; path: string }> = ({ locale, path }) => {
-	const target = otherLocale(locale);
+// (/lang/:locale へのリンク → 元のページへリダイレクト)。JS が無くても開閉・切り替えできるよう <details> で組む。
+const LangMenu: FC<{ locale: Locale; path: string }> = ({ locale, path }) => {
+	const t = messagesFor(locale);
 	return (
-		<a
-			id="lang-toggle"
-			class="lang-toggle"
-			href={`/lang/${target}?to=${encodeURIComponent(path)}`}
-			hreflang={target}
-			lang={target}
-			aria-label={messagesFor(locale).langToggleLabel}
-		>
-			{messagesFor(target).langName}
-		</a>
+		<details id="lang-menu" class="corner-menu">
+			<summary
+				class="corner-menu-button lang-menu-button"
+				aria-label={`${t.langMenuLabel}: ${t.langName}`}
+				title={t.langMenuLabel}
+			>
+				<span aria-hidden="true">🌐</span>
+				{t.langName}
+			</summary>
+			<ul class="corner-menu-list">
+				{LOCALES.map((option) => (
+					<li>
+						<a
+							href={`/lang/${option}?to=${encodeURIComponent(path)}`}
+							hreflang={option}
+							lang={option}
+							aria-current={option === locale ? "true" : undefined}
+						>
+							{messagesFor(option).langName}
+						</a>
+					</li>
+				))}
+			</ul>
+		</details>
 	);
 };
 
@@ -49,21 +63,20 @@ const Layout: FC<
 			</head>
 			<body>
 				<div class="corner-controls">
-					<LangToggle locale={locale} path={path} />
-					{/* theme.js の ThemeToggle がこの中身を置き換える。中のボタンは JS 実行前の見た目用 */}
-					<div id="theme-toggle-root">
+					<LangMenu locale={locale} path={path} />
+					{/* corner-controls.js の ThemeMenu がこの中身を置き換える。中のボタンは JS 実行前の見た目用 */}
+					<div id="theme-menu-root">
 						<button
-							id="theme-toggle"
-							class="theme-toggle"
+							class="corner-menu-button theme-menu-button"
 							type="button"
-							aria-label={t.themeToggleLabel}
+							aria-label={t.themeMenuLabel}
 						></button>
 					</div>
 				</div>
 				{children}
 				<footer class="app-footer">v{pkg.version}</footer>
 				{/* async を付けないこと: async 付きの <script src> は hono/jsx が <head> に巻き上げる */}
-				<script type="module" src="/theme.js"></script>
+				<script type="module" src="/corner-controls.js"></script>
 			</body>
 		</html>
 	);
