@@ -1,6 +1,6 @@
 {
 	"name": "planning-porker-app",
-	"version": "2026.9.6",
+	"version": "2026.9.7",
 	"private": true,
 	"description": "複数人でリアルタイムに見積もりを行えるプランニングポーカーアプリ",
 	"type": "module",
