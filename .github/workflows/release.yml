@@ -76,7 +76,7 @@ jobs:
       # wrangler.jsonc の vars には書かない (書くとデプロイのたびに
       # 平文の値でシークレットが上書きされてしまう)。
       - name: Deploy
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
