@@ -25,15 +25,18 @@ describe("GET /", () => {
 		expect(body).toContain('class="page page-home"');
 		// FOUC 防止のインラインスクリプトがエスケープされずに埋め込まれている
 		expect(body).toContain('localStorage.getItem("pp-theme")');
-		expect(body).toContain('id="theme-toggle-root"');
-		expect(body).toContain('id="theme-toggle"');
-		// 英語へ切り替えるリンク (戻り先は今のページ)
+		expect(body).toContain('id="theme-menu-root"');
+		// 言語メニューのボタンは今の言語を示し、選択肢には両方の言語が並ぶ (戻り先は今のページ)
+		expect(body).toContain('aria-label="表示言語: 日本語"');
+		expect(body).toMatch(/href="\/lang\/ja\?to=%2F"[^>]*aria-current="true"/);
 		expect(body).toContain('href="/lang/en?to=%2F"');
 		expect(body).toContain(">English</a>");
 		expect(body).toContain(
 			`<footer class="app-footer">v${pkg.version}</footer>`,
 		);
-		expect(body).toContain('<script type="module" src="/theme.js"></script>');
+		expect(body).toContain(
+			'<script type="module" src="/corner-controls.js"></script>',
+		);
 		expect(body).not.toContain('class="error"');
 		expect(body).toMatch(/name="hostName" value="ゲスト\d{4}"/);
 		// 部屋名も手入力せずに済むよう、ランダムな既定値が入っている
@@ -112,7 +115,8 @@ describe("表示言語", () => {
 		expect(body).toContain("<h2>Join a room</h2>");
 		expect(body).toMatch(/name="hostName" value="Guest\d{4}"/);
 		expect(body).toMatch(/name="roomName" value="Estimate \d{4}"/);
-		// 切り替えリンクは日本語に戻すためのもの
+		expect(body).toContain('aria-label="Language: English"');
+		expect(body).toMatch(/href="\/lang\/en\?to=%2F"[^>]*aria-current="true"/);
 		expect(body).toContain('href="/lang/ja?to=%2F"');
 		expect(body).toContain(">日本語</a>");
 	});

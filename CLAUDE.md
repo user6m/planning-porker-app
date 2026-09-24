@@ -105,7 +105,7 @@ src/
     app.tsx                   # ルーム画面のエントリ（.page-room の data-* を読んで RoomApp を render）
     room.tsx                  # ルーム画面のコンポーネント群
     use-room-socket.ts        # WebSocket 接続・再接続・join を担う hook
-    theme.tsx                 # ダークモード切り替え（ThemeToggle）
+    corner-controls.tsx       # 右上の言語・テーマメニュー（ThemeMenu の描画と両メニューの開閉）
     locale.ts                 # <html lang> から表示言語を読み取り、文言 `t` を公開する
     tsconfig.json             # ブラウザ用 tsconfig（DOM lib + jsxImportSource: hono/jsx/dom）
 public/
@@ -161,7 +161,7 @@ test/
   以前QRコードを固定配置にして表示名の入力欄と重なった経緯があり（`fix: レイアウト崩れを修正` のコミット）、
   今はヘッダー内のflexに戻してある。固定していいのは画面右上の `.corner-controls` だけで、
   新しい要素はflex / gridのフローに置く。やむを得ず固定するなら、何と重なりうるかと避けるための寸法を
-  コメントに残す（`.qr-widget` の `margin-top` が例）。
+  コメントに残す（`.header-side` の `margin-top` が例）。
 - **横スクロールを作らない。** 幅は固定pxではなく `max-width` と `flex-wrap` / `grid-template-columns: repeat(auto-fill, minmax(...))`
   で伸縮させる（`.cards`、`.header-side`、`.participants` が例）。幅320pxでも横スクロールが出ないこと。
 - **中身で寸法が変わる箇所は先に枠を決める。** 投票状況で中身が空/✅/数値と変わる `.vote-slot` は高さを固定し、

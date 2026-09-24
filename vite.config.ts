@@ -24,14 +24,14 @@ export default defineConfig({
 		rolldownOptions: {
 			input: {
 				app: "src/client/app.tsx",
-				theme: "src/client/theme.tsx",
+				"corner-controls": "src/client/corner-controls.tsx",
 			},
 			output: {
 				format: "es",
 				// ハッシュ無しの固定名で出力し、src/views.tsx の <script type="module" src="/app.js"> 等と一致させる。
 				// Workers Static Assets は max-age=0, must-revalidate + ETag を付けるのでキャッシュバスターは不要。
 				entryFileNames: "[name].js",
-				// app.js と theme.js が共有する hono/jsx/dom ランタイムはハッシュ付きチャンクに分離される
+				// app.js と corner-controls.js が共有する hono/jsx/dom ランタイムはハッシュ付きチャンクに分離される
 				chunkFileNames: "chunks/[name]-[hash].js",
 				assetFileNames: "[name][extname]",
 			},

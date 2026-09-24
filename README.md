@@ -51,7 +51,7 @@ pnpm dev
 
 `http://localhost:8787` で起動します。`pnpm dev` は次のことを行います。
 
-1. `vite build` を1回実行し、ブラウザ側バンドル（`src/client/` → `dist/app.js`, `dist/theme.js`）と `public/style.css` のコピーを `dist/` に生成
+1. `vite build` を1回実行し、ブラウザ側バンドル（`src/client/` → `dist/app.js`, `dist/corner-controls.js`）と `public/style.css` のコピーを `dist/` に生成
 2. `vite build --watch` と [wrangler dev](https://developers.cloudflare.com/workers/wrangler/commands/#dev) を並行起動（Ctrl-C で両方止まります）
 
 `dist/` は git 管理外で、`wrangler.jsonc` の `assets.directory` として Workers Static Assets の配信元になります。
@@ -165,7 +165,7 @@ src/
     room.tsx                  # ルーム画面のコンポーネント
     use-room-socket.ts        # WebSocket 接続・再接続の hook
     qr-code.tsx               # 招待URLのQRコード
-    theme.tsx                 # ダークモード切り替え
+    corner-controls.tsx       # 右上の言語・テーマメニュー
     locale.ts                 # <html lang> から表示言語を読み取る
     tsconfig.json             # ブラウザ用 tsconfig（DOM の型あり）
 public/

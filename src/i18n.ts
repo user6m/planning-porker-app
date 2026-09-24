@@ -18,20 +18,17 @@ export function isLocale(value: string | undefined | null): value is Locale {
 	return LOCALES.includes(value as Locale);
 }
 
-/** 今の言語からみた「切り替え先」の言語（対応言語が2つなので単純にもう一方） */
-export function otherLocale(locale: Locale): Locale {
-	return locale === "ja" ? "en" : "ja";
-}
-
 export interface Messages {
-	/** 言語切り替えボタンに出すこの言語自身の名前 */
+	/** 言語メニューに出すこの言語自身の名前 */
 	langName: string;
 	/** <html lang> と同じ言語タグ */
 	htmlLang: string;
 	appName: string;
 	tagline: string;
-	themeToggleLabel: string;
-	langToggleLabel: string;
+	langMenuLabel: string;
+	themeMenuLabel: string;
+	/** テーマメニューの選択肢。auto は OS の設定 (prefers-color-scheme) に従う */
+	themeNames: { auto: string; light: string; dark: string };
 	home: {
 		createHeading: string;
 		roomNameLabel: string;
@@ -81,8 +78,9 @@ const ja: Messages = {
 	htmlLang: "ja",
 	appName: "プランニングポーカー",
 	tagline: "チームでリアルタイムに見積もりポイントを出し合えるツールです。",
-	themeToggleLabel: "表示テーマを切り替え",
-	langToggleLabel: "言語を切り替え",
+	langMenuLabel: "表示言語",
+	themeMenuLabel: "表示テーマ",
+	themeNames: { auto: "OS の設定に合わせる", light: "ライト", dark: "ダーク" },
 	home: {
 		createHeading: "新しい部屋を作る",
 		roomNameLabel: "部屋の名前",
@@ -133,8 +131,9 @@ const en: Messages = {
 	htmlLang: "en",
 	appName: "Planning Poker",
 	tagline: "Estimate story points together, in real time.",
-	themeToggleLabel: "Switch color theme",
-	langToggleLabel: "Switch language",
+	langMenuLabel: "Language",
+	themeMenuLabel: "Theme",
+	themeNames: { auto: "OS default", light: "Light", dark: "Dark" },
 	home: {
 		createHeading: "Create a new room",
 		roomNameLabel: "Room name",
