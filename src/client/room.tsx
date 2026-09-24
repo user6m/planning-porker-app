@@ -1,4 +1,4 @@
-import type { FC } from "hono/jsx/dom";
+import type { Child, FC } from "hono/jsx/dom";
 import { useLayoutEffect, useMemo, useRef, useState } from "hono/jsx/dom";
 import {
 	CARD_DECK,
@@ -83,17 +83,18 @@ export const RoomApp: FC<{
 				userId={userId}
 			/>
 			<section class="controls">
-				<Timer
-					timer={state?.timer ?? null}
-					onStart={(durationSec) => send({ type: "startTimer", durationSec })}
-					onStop={() => send({ type: "stopTimer" })}
-				/>
 				<CardDeck selected={selectedVote} onVote={onVote} />
 				<Actions
 					resetDisabled={resetDisabled}
 					onReveal={onReveal}
 					onReset={onReset}
-				/>
+				>
+					<Timer
+						timer={state?.timer ?? null}
+						onStart={(durationSec) => send({ type: "startTimer", durationSec })}
+						onStop={() => send({ type: "stopTimer" })}
+					/>
+				</Actions>
 			</section>
 			<p id="connection-status" class="status" role="status">
 				{status}
@@ -123,12 +124,18 @@ const RoomHeader: FC<{
 				{t.room.backToTop}
 			</a>
 			<h1 id="room-name">{roomName}</h1>
-			<p class="room-code">
-				{t.room.roomCode} <code>{roomId}</code> <CopyLinkButton />
-			</p>
+			<div class="room-code">
+				<span>
+					{t.room.roomCode} <code>{roomId}</code>
+				</span>
+				<CopyLinkButton />
+			</div>
+			<details class="qr-toggle">
+				<summary>{t.room.qrToggle}</summary>
+				<RoomQrCode />
+			</details>
 		</div>
 		<div class="header-side">
-			<RoomQrCode />
 			<div class="me">
 				<label>
 					{t.room.displayName}
@@ -175,7 +182,7 @@ const CopyLinkButton: FC = () => {
 	};
 
 	return (
-		<button id="copy-link" type="button" onClick={copy}>
+		<button id="copy-link" type="button" class="secondary" onClick={copy}>
 			{copied ? t.room.copied : t.room.copyLink}
 		</button>
 	);
@@ -243,7 +250,8 @@ const Actions: FC<{
 	resetDisabled: boolean;
 	onReveal: () => void;
 	onReset: () => void;
-}> = ({ resetDisabled, onReveal, onReset }) => (
+	children?: Child;
+}> = ({ resetDisabled, onReveal, onReset, children }) => (
 	<div class="actions">
 		<button id="reveal" type="button" onClick={onReveal}>
 			{t.room.reveal}
@@ -251,11 +259,11 @@ const Actions: FC<{
 		<button id="reset" type="button" disabled={resetDisabled} onClick={onReset}>
 			{t.room.reset}
 		</button>
+		{children}
 	</div>
 );
 
 const TIMER_TICK_MS = 250;
-const DEFAULT_TIMER_SEC = 60;
 
 function formatRemaining(ms: number): string {
 	const totalSec = Math.ceil(ms / 1000);
@@ -264,13 +272,16 @@ function formatRemaining(ms: number): string {
 	return `${min}:${String(sec).padStart(2, "0")}`;
 }
 
-/** 部屋で共有するカウントダウン。誰が開始/停止しても全員の画面に反映される */
+/**
+ * 部屋で共有するカウントダウン。誰が開始/停止しても全員の画面に反映される。
+ * `.actions` の中に置く前提で、長さの選択肢は flex-basis: 100% で操作ボタンの下の行に折り返す。
+ */
 const Timer: FC<{
 	timer: RoomState["timer"];
 	onStart: (durationSec: number) => void;
 	onStop: () => void;
 }> = ({ timer, onStart, onStop }) => {
-	const durationRef = useRef<number>(DEFAULT_TIMER_SEC);
+	const [presetsOpen, setPresetsOpen] = useState(false);
 	// state が届くたびに timer は新しいオブジェクトになるので、受信した時点を起点に終了時刻を取り直す
 	const endsAt = useMemo(
 		() => (timer ? Date.now() + timer.remainingMs : null),
@@ -292,53 +303,60 @@ const Timer: FC<{
 
 	if (endsAt === null) {
 		return (
-			<div class="timer" id="timer">
-				<label>
-					{t.room.timerLabel}
-					<select
-						id="timer-duration"
-						onChange={(e) => {
-							durationRef.current = Number(
-								(e.target as HTMLSelectElement).value,
-							);
-						}}
-					>
+			<>
+				<button
+					id="timer-toggle"
+					type="button"
+					class="secondary timer timer-toggle"
+					aria-expanded={presetsOpen}
+					aria-controls="timer-presets"
+					onClick={() => setPresetsOpen(!presetsOpen)}
+				>
+					<span aria-hidden="true">⏱</span> {t.room.timerLabel}
+				</button>
+				{presetsOpen && (
+					<div id="timer-presets" class="timer-presets">
 						{TIMER_PRESETS_SEC.map((sec) => (
-							<option
+							<button
 								key={sec}
-								value={String(sec)}
-								selected={sec === durationRef.current}
+								type="button"
+								class="secondary"
+								onClick={() => {
+									setPresetsOpen(false);
+									onStart(sec);
+								}}
 							>
 								{t.room.timerDuration(sec)}
-							</option>
+							</button>
 						))}
-					</select>
-				</label>
-				<button
-					id="timer-start"
-					type="button"
-					class="secondary"
-					onClick={() => onStart(durationRef.current)}
-				>
-					{t.room.startTimer}
-				</button>
-			</div>
+					</div>
+				)}
+			</>
 		);
 	}
 
 	const remainingMs = Math.max(0, endsAt - now);
 	const timeUp = remainingMs === 0;
 	return (
-		<div class="timer" id="timer">
-			<span class="timer-label">{t.room.timerLabel}</span>
+		<div class={timeUp ? "timer timer-running time-up" : "timer timer-running"}>
+			{/* 「時間切れ」の文言だと幅が広がって行が折り返すので、見た目は赤い 0:00 にして文言は読み上げ用に回す */}
 			<output
 				id="timer-display"
-				class={timeUp ? "timer-display time-up" : "timer-display"}
+				class="timer-display"
+				aria-label={timeUp ? t.room.timeUp : undefined}
+				title={timeUp ? t.room.timeUp : undefined}
 			>
-				{timeUp ? t.room.timeUp : formatRemaining(remainingMs)}
+				<span aria-hidden="true">⏱</span> {formatRemaining(remainingMs)}
 			</output>
-			<button id="timer-stop" type="button" class="secondary" onClick={onStop}>
-				{t.room.stopTimer}
+			<button
+				id="timer-stop"
+				type="button"
+				class="timer-stop"
+				aria-label={t.room.stopTimer}
+				title={t.room.stopTimer}
+				onClick={onStop}
+			>
+				✕
 			</button>
 		</div>
 	);

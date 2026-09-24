@@ -198,6 +198,14 @@ button.secondary {
 	text-decoration: underline;
 }
 
+.room-code {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 1rem 0 0;
+}
+
 .room-code code {
 	background: var(--card-bg);
 	border: 1px solid var(--border);
@@ -214,8 +222,40 @@ button.secondary {
 	margin-top: 2.5rem;
 }
 
+.qr-toggle {
+	margin-top: 0.75rem;
+}
+
+.qr-toggle > summary {
+	display: inline-block;
+	list-style: none;
+	cursor: pointer;
+	color: var(--muted);
+	font-size: 0.9rem;
+}
+
+.qr-toggle > summary::-webkit-details-marker {
+	display: none;
+}
+
+.qr-toggle > summary::before {
+	content: "▸ ";
+}
+
+.qr-toggle[open] > summary::before {
+	content: "▾ ";
+}
+
+.qr-toggle > summary:hover {
+	color: var(--accent);
+}
+
+.qr-toggle[open] > .qr-widget {
+	margin-top: 0.5rem;
+}
+
 .qr-widget {
-	flex-shrink: 0;
+	display: inline-block;
 	background: #ffffff;
 	border: 1px solid var(--border);
 	border-radius: 10px;
@@ -226,8 +266,8 @@ button.secondary {
 
 .qr-widget svg {
 	display: block;
-	width: 84px;
-	height: 84px;
+	width: 140px;
+	height: 140px;
 }
 
 .qr-widget-caption {
@@ -293,53 +333,70 @@ button.secondary {
 	opacity: 0.6;
 }
 
-.timer {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 0.6rem;
-	margin-bottom: 1.25rem;
+/* 操作ボタンの行の右端に寄せる。狭い画面では折り返して次の行の右端に来る */
+.actions > .timer {
+	margin-left: auto;
 }
 
-.timer label {
-	flex-direction: row;
-	align-items: center;
-	gap: 0.6rem;
-}
-
-.timer-label {
-	font-size: 0.9rem;
-	color: var(--muted);
-}
-
-/* セレクトとボタンは既定の高さがブラウザごとに違い、並べると上下がずれるので高さを揃える */
-.timer select,
-.timer button {
+/* 未開始のボタンと動作中のピルは高さを揃え、開始/停止で行の高さが変わらないようにする */
+.timer-toggle,
+.timer-running {
 	height: 2.6rem;
-	padding-top: 0;
-	padding-bottom: 0;
 }
 
-.timer select {
-	font-size: 1rem;
-	padding-left: 0.6rem;
-	padding-right: 0.6rem;
-	border-radius: 8px;
+.timer-toggle {
+	padding: 0 0.8rem;
+	font-size: 0.85rem;
+	white-space: nowrap;
+}
+
+/* 未開始のボタンと幅がほぼ同じピル型にして、開始/停止で操作ボタンの行が折り返したり戻ったりしにくくする */
+.timer-running {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding-left: 0.8rem;
 	border: 1px solid var(--border);
-	background: var(--bg);
-	color: var(--fg);
+	border-radius: 8px;
+	white-space: nowrap;
 }
 
-/* 残り時間の桁が変わっても停止ボタンの位置が動かないよう、等幅数字と最小幅を指定する */
+/* m:ss の桁幅が変わらないよう等幅数字にする */
 .timer-display {
-	min-width: 5rem;
-	font-size: 1.4rem;
 	font-weight: 700;
 	font-variant-numeric: tabular-nums;
 }
 
-.timer-display.time-up {
+.timer-running.time-up {
+	border-color: var(--danger);
 	color: var(--danger);
+}
+
+.timer-stop {
+	align-self: stretch;
+	padding: 0 0.7rem;
+	background: none;
+	color: var(--muted);
+	font-size: 0.85rem;
+}
+
+.timer-stop:hover {
+	filter: none;
+	color: var(--fg);
+}
+
+.timer-presets {
+	flex-basis: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 0.5rem;
+}
+
+.timer-presets button {
+	padding: 0.45rem 0.8rem;
+	font-size: 0.85rem;
 }
 
 .cards {
@@ -371,6 +428,8 @@ button.secondary {
 
 .actions {
 	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
 	gap: 0.75rem;
 }
 

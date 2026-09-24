@@ -60,11 +60,11 @@ export interface Messages {
 		timerLabel: string;
 		/** タイマーの長さの選択肢の表示 (例: 30秒, 2分) */
 		timerDuration: (sec: number) => string;
-		startTimer: string;
 		stopTimer: string;
 		timeUp: string;
 		qrAlt: string;
 		qrCaption: string;
+		qrToggle: string;
 		connected: string;
 		reconnecting: string;
 		error: (message: string) => string;
@@ -118,11 +118,11 @@ const ja: Messages = {
 		reset: "リセット",
 		timerLabel: "タイマー",
 		timerDuration: (sec) => (sec < 60 ? `${sec}秒` : `${sec / 60}分`),
-		startTimer: "開始",
 		stopTimer: "停止",
 		timeUp: "時間切れ",
 		qrAlt: "部屋の招待URLのQRコード",
 		qrCaption: "スキャンして参加",
+		qrToggle: "QRコードを表示",
 		connected: "接続中",
 		reconnecting: "切断されました。再接続しています…",
 		error: (message) => `エラー: ${message}`,
@@ -176,11 +176,11 @@ const en: Messages = {
 		reset: "Reset",
 		timerLabel: "Timer",
 		timerDuration: (sec) => (sec < 60 ? `${sec} sec` : `${sec / 60} min`),
-		startTimer: "Start",
 		stopTimer: "Stop",
 		timeUp: "Time's up",
 		qrAlt: "QR code for the room invite URL",
 		qrCaption: "Scan to join",
+		qrToggle: "Show QR code",
 		connected: "Connected",
 		reconnecting: "Disconnected. Reconnecting…",
 		error: (message) => `Error: ${message}`,
