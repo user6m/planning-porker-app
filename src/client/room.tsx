@@ -6,6 +6,7 @@ import {
 	type RoomState,
 	TIMER_PRESETS_SEC,
 } from "../types";
+import { averageVote, formatAverage } from "../vote-stats";
 import { t } from "./locale";
 import { RoomQrCode } from "./qr-code";
 import { useRoomSocket } from "./use-room-socket";
@@ -82,6 +83,7 @@ export const RoomApp: FC<{
 				revealed={state?.revealed ?? false}
 				userId={userId}
 			/>
+			{state?.revealed && <VoteSummary participants={state.participants} />}
 			<section class="controls">
 				<CardDeck selected={selectedVote} onVote={onVote} />
 				<Actions
@@ -225,6 +227,20 @@ const ParticipantCard: FC<{
 			<div class="name">{isMe ? t.room.me(p.name) : p.name}</div>
 			<div class="vote-slot">{slot}</div>
 		</div>
+	);
+};
+
+const VoteSummary: FC<{ participants: Participant[] }> = ({ participants }) => {
+	const average = averageVote(
+		participants.filter((p) => !p.isSpectator).map((p) => p.vote),
+	);
+	return (
+		<p id="vote-summary" class="vote-summary">
+			{t.room.average}{" "}
+			<strong id="vote-average">
+				{average === null ? "-" : formatAverage(average)}
+			</strong>
+		</p>
 	);
 };
 

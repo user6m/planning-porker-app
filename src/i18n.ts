@@ -57,6 +57,8 @@ export interface Messages {
 		me: (name: string) => string;
 		reveal: string;
 		reset: string;
+		/** 公開後に出す平均値のラベル。数値の票が無いときは値が "-" になる */
+		average: string;
 		timerLabel: string;
 		/** タイマーの長さの選択肢の表示 (例: 30秒, 2分) */
 		timerDuration: (sec: number) => string;
@@ -116,6 +118,7 @@ const ja: Messages = {
 		me: (name) => `${name} (自分)`,
 		reveal: "公開する",
 		reset: "リセット",
+		average: "平均:",
 		timerLabel: "タイマー",
 		timerDuration: (sec) => (sec < 60 ? `${sec}秒` : `${sec / 60}分`),
 		stopTimer: "停止",
@@ -174,6 +177,7 @@ const en: Messages = {
 		me: (name) => `${name} (you)`,
 		reveal: "Reveal",
 		reset: "Reset",
+		average: "Average:",
 		timerLabel: "Timer",
 		timerDuration: (sec) => (sec < 60 ? `${sec} sec` : `${sec / 60} min`),
 		stopTimer: "Stop",

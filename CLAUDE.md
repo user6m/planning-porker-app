@@ -98,6 +98,7 @@ src/
   bindings.ts                 # Cloudflare Bindingsの型定義
   types.ts                    # 部屋の状態・WebSocketメッセージの型（ブラウザ側とも共有）
   i18n.ts                     # 日本語/英語の文言定義（ブラウザ側とも共有。DOM/Workers に依存しないこと）
+  vote-stats.ts               # 公開後の投票結果の集計（平均値など。ブラウザ側とも共有）
   views.tsx                   # サーバーサイドで返すHTML（hono/jsx の関数コンポーネント）
   durable-objects/
     poker-room.ts             # 部屋(プランニングセッション)を表すDurable Object
@@ -118,6 +119,7 @@ test/
   poker-room.test.ts
   session.test.ts
   views.test.ts               # ルート経由でレンダリング結果を検証
+  vote-stats.test.ts
 ```
 
 - 部屋の状態（参加者・投票）はDurable Objectの `ctx.storage` に永続化される。メモリ上にしか保持しないとハイバネート時に消える。
@@ -129,7 +131,7 @@ test/
 
 ### JSX / コンポーネントのルール
 
-- `src/client` は Worker から import しない（サーバー側 tsconfig は DOM の型を含まず、ブラウザ側は Workers の型を含まない）。共有してよいのは `src/types.ts` と `src/i18n.ts` だけで、どちらも DOM / Workers の API に依存しない純粋な TypeScript に保つ（共有ファイルを増やすときは `src/client/tsconfig.json` の `include` にも追加する）。
+- `src/client` は Worker から import しない（サーバー側 tsconfig は DOM の型を含まず、ブラウザ側は Workers の型を含まない）。共有してよいのは `src/types.ts` / `src/i18n.ts` / `src/vote-stats.ts` だけで、いずれも DOM / Workers の API に依存しない純粋な TypeScript に保つ（共有ファイルを増やすときは `src/client/tsconfig.json` の `include` にも追加する）。
 - ブラウザ側のコードは `render` も hooks も型もすべて `hono/jsx/dom` から import する（`hono/jsx` の `Fragment` / `memo` はサーバー実装なので混ぜない）。
 - JSX の属性は `class` / `for` / `maxlength` など HTML 名で書く（hono/jsx の型はそちらが正）。
 - サーバー側で生の HTML/JS（DOCTYPE、FOUC 防止スクリプト、SVG など）を出力するときは `hono/html` の `html` タグ付きテンプレート / `raw()` を子要素として渡す。hono/jsx は `<script>` の中身も含めて文字列をエスケープする。`<script src>` に `async` を付けると `<head>` に巻き上げられるので付けない。
