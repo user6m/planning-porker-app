@@ -297,6 +297,12 @@ button.secondary {
 	margin-bottom: 2rem;
 }
 
+/* 公開中だけ参加者一覧と操作欄の間に出る。一覧の下余白を詰めて、出し入れで操作欄の位置が大きく跳ねないようにする */
+.vote-summary {
+	margin: -1rem 0 1rem;
+	font-size: 1.1rem;
+}
+
 .participant {
 	background: var(--card-bg);
 	border: 1px solid var(--border);
