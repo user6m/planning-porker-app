@@ -23,12 +23,12 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.15",
 		"@cloudflare/vitest-pool-workers": "^0.23.0",
-		"@types/node": "^26.6.4",
-		"concurrently": "^10.0.5",
+		"@types/node": "^26.6.5",
+		"concurrently": "^10.0.6",
 		"typescript": "^7.0.2",
 		"vite": "^8.3.4",
 		"vitest": "^4.1.11",
-		"wrangler": "^4.148.0"
+		"wrangler": "^4.151.0"
 	},
 	"engines": {
 		"node": ">=22"
