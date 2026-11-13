@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       hono:
-        specifier: ^4.13.13
-        version: 4.13.13
+        specifier: ^4.13.16
+        version: 4.13.16
       qrcode-generator:
         specifier: ^2.0.4
         version: 2.0.4
@@ -1057,8 +1057,8 @@ packages:
     resolution: {integrity: sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA==}
     engines: {node: '>=18'}
 
-  hono@4.13.13:
-    resolution: {integrity: sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==}
+  hono@4.13.16:
+    resolution: {integrity: sha512-AOLOEhvrV+iH92xXCnFr/5+3KjPKcI3xP63XJtX5spAnkznPdHijlIsUTpi7/9EhWqrTCekw5c5zh1K+YsVw7A==}
     engines: {node: '>=16.9.0'}
 
   kleur@4.1.5:
@@ -2103,7 +2103,7 @@ snapshots:
 
   get-east-asian-width@1.6.0: {}
 
-  hono@4.13.13: {}
+  hono@4.13.16: {}
 
   kleur@4.1.5: {}
 
